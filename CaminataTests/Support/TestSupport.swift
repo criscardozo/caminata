@@ -67,16 +67,31 @@ enum TestRoute {
 }
 
 /// Writes files where the CI job can pick them up as workflow artifacts.
+///
+/// Failures are logged rather than swallowed: a silently missing artifact looks
+/// exactly like a test that never ran.
 enum CIOutput {
-    static func write(_ data: Data, named name: String) {
+    @discardableResult
+    static func write(_ data: Data, named name: String) -> URL? {
         guard let documents = FileManager.default.urls(
             for: .documentDirectory,
             in: .userDomainMask
-        ).first else { return }
+        ).first else {
+            print("CIOutput: no documents directory available")
+            return nil
+        }
 
         let directory = documents.appendingPathComponent("CIOutput", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try? data.write(to: directory.appendingPathComponent(name))
+        let destination = directory.appendingPathComponent(name)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try data.write(to: destination, options: .atomic)
+            print("CIOutput: wrote \(data.count) bytes to \(destination.path)")
+            return destination
+        } catch {
+            print("CIOutput: failed to write \(name): \(error)")
+            return nil
+        }
     }
 }
 

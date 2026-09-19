@@ -1,8 +1,9 @@
 name: iOS
 
 on:
-  push:
-    branches: [main]
+  # No push trigger on purpose: this job needs a macOS runner, and those are
+  # only free because the repo is public. A pull request still gets checked
+  # before it lands, and a run can be started by hand any time.
   pull_request:
   workflow_dispatch:
 
@@ -104,7 +105,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: caminata-ci-output
-          path: apps/ios/artifacts/
+          name: caminata-map-images
+          path: apps/ios/artifacts/output/
           if-no-files-found: warn
           retention-days: 14

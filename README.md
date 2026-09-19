@@ -168,6 +168,12 @@ CI runs the same build and test suite and uploads the map images the tests
 generate, so you can see a rendered route without a Mac. Download them from the
 workflow run's **Artifacts** section.
 
+It runs on pull requests and on demand, not on push: the job needs a macOS
+runner, and those are only free because this repo is public. Artifacts in a
+public repo are downloadable by anyone, so the upload is the rendered images
+and nothing else — the full `.xcresult` stays on the runner, and the build
+output is already in the job log.
+
 Tests that need Apple's map tiles skip themselves when the network is
 unavailable; the drawing they cover is tested separately against a synthetic
 base image. Nothing in the suite touches Firebase: the upload rules are

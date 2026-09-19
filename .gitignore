@@ -11,6 +11,10 @@ build/
 apps/ios/Caminata.xcodeproj/
 apps/ios/Caminata/Resources/Info.plist
 
+# Per-developer Firebase configuration. Not a secret in Firebase's model, but
+# this repo is public and the API key inside it spends a free-tier quota.
+GoogleService-Info.plist
+
 # Swift Package Manager
 .build/
 .swiftpm/

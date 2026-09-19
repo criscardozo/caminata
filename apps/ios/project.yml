@@ -1,7 +1,7 @@
 name: Caminata
 
 options:
-  bundleIdPrefix: ai.1qlabs
+  bundleIdPrefix: dev.cardozo
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -36,16 +36,17 @@ targets:
         product: GoogleSignIn
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ai.1qlabs.caminata
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.caminata
         PRODUCT_NAME: Caminata
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
-        # Overridden in Caminata/Resources/Firebase.xcconfig when a real
-        # Firebase project is wired up; harmless while it is not.
-        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.unconfigured
+        # REVERSED_CLIENT_ID out of GoogleService-Info.plist. Re-copy it if the
+        # app is ever re-registered in Firebase: a new app gets a new OAuth
+        # client, and the app checks the two against each other at sign-in.
+        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.898210117692-cborph5spgsda15cuvf7smj4smu6pqlb
     info:
       path: Caminata/Resources/Info.plist
       properties:
@@ -79,7 +80,7 @@ targets:
       - target: Caminata
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ai.1qlabs.caminata.tests
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.caminata.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

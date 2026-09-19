@@ -103,14 +103,23 @@ struct TrackingView: View {
     private var statsPanel: some View {
         HStack {
             stat("Distance", WalkFormatting.distance(model.stats.distance))
-            Divider()
+            divider
             stat("Time", WalkFormatting.duration(model.stats.elapsed))
-            Divider()
+            divider
             stat("Pace", WalkFormatting.pace(model.stats.averagePace))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+        // Without this the panel takes every point the ZStack will give it,
+        // which is the whole screen.
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// A bare Divider stretches to whatever height it is offered, and in an
+    /// HStack that is however tall the stack is allowed to be.
+    private var divider: some View {
+        Divider().frame(height: 34)
     }
 
     private func stat(_ title: String, _ value: String) -> some View {

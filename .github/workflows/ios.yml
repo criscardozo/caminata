@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 30
     env:
       SCHEME: Caminata
-      APP_BUNDLE_ID: ai.1qlabs.caminata
+      APP_BUNDLE_ID: dev.cardozo.caminata
     defaults:
       run:
         working-directory: apps/ios

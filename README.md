@@ -92,8 +92,9 @@ Everything below is on the free Spark plan. Nothing here needs Blaze.
 
 1. Create a Firebase project, then enable **Authentication → Google** and
    **Firestore** (production mode).
-2. Add an iOS app with bundle ID `ai.1qlabs.caminata`, download
+2. Add an iOS app with bundle ID `dev.cardozo.caminata`, download
    `GoogleService-Info.plist` and drop it in `apps/ios/Caminata/Resources/`.
+   It is deliberately not committed — see below.
 3. Copy `REVERSED_CLIENT_ID` out of that file into `GOOGLE_REVERSED_CLIENT_ID`
    in `apps/ios/project.yml`, then re-run `xcodegen generate`. Google Sign-In
    hands control back through that URL scheme, and it is the one value that

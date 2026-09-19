@@ -57,6 +57,23 @@ page reads directly, with `firebase/firestore.rules` as the only thing standing
 between them — which is why the rules validate the shape of a walk rather than
 taking it on trust. That keeps the whole thing inside the free Spark plan.
 
+## Icons
+
+`icon/caminata.svg` is the master. Everything else is generated from it:
+
+```sh
+brew install librsvg imagemagick
+./icon/generate.sh
+```
+
+That writes the iOS app icon and the web favicons, touch icon and manifest
+icons. The PNGs are committed so neither build depends on rsvg-convert, but
+they are generated files — edit the SVG and re-run the script, never the PNGs.
+
+The icon draws what the app draws: a route haloed in white, red at its core,
+green where the walk started and dark where it ended, in the same three colours
+the map image and the web history use.
+
 ## Requirements
 
 - Xcode 16 or later, iOS 17+ deployment target

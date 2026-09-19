@@ -43,6 +43,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # REVERSED_CLIENT_ID out of GoogleService-Info.plist. Re-copy it if the
         # app is ever re-registered in Firebase: a new app gets a new OAuth
         # client, and the app checks the two against each other at sign-in.

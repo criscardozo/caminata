@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The master icon. Everything else is generated from this file by
+  icon/generate.sh. Do not edit the PNGs by hand.
+
+  It draws what the app draws: a recorded route, haloed in white so it stays
+  readable over anything, red at its core, with a green marker where the walk
+  started and a pale one where it ended. The same three colours the map image
+  and the web history use.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#125C6B"/>
+      <stop offset="1" stop-color="#0B3D4A"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#0B3D4A"/>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 268 806 C 268 648, 500 638, 512 512 C 524 386, 756 372, 756 218"
+          stroke="#FFFFFF" stroke-opacity="0.95" stroke-width="150"/>
+    <path d="M 268 806 C 268 648, 500 638, 512 512 C 524 386, 756 372, 756 218"
+          stroke="#D9293D" stroke-width="78"/>
+  </g>
+
+  <circle cx="268" cy="806" r="96" fill="#FFFFFF"/>
+  <circle cx="268" cy="806" r="66" fill="#21A659"/>
+
+  <circle cx="756" cy="218" r="96" fill="#FFFFFF"/>
+  <circle cx="756" cy="218" r="66" fill="#1F3347"/>
+</svg>

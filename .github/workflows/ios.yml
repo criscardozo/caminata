@@ -1,0 +1,81 @@
+name: iOS
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & test (iOS Simulator)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      SCHEME: Caminata
+      APP_BUNDLE_ID: ai.1qlabs.caminata
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun simctl list runtimes
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Select a simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          DEVICES=$(xcrun simctl list devices available --json)
+          UDID=$(echo "$DEVICES" | jq -r '[.devices | to_entries[] | select(.key | test("SimRuntime.iOS")) | .value[] | select(.name | startswith("iPhone"))] | .[0].udid // empty')
+          NAME=$(echo "$DEVICES" | jq -r '[.devices | to_entries[] | select(.key | test("SimRuntime.iOS")) | .value[] | select(.name | startswith("iPhone"))] | .[0].name // empty')
+          if [ -z "$UDID" ]; then
+            echo "::error::No iPhone simulator available on this runner"
+            xcrun simctl list devices
+            exit 1
+          fi
+          echo "Using $NAME ($UDID)"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Caminata.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath artifacts/Caminata.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Collect files written by the tests
+        if: always()
+        run: |
+          mkdir -p artifacts/output
+          CONTAINER=$(xcrun simctl get_app_container "${{ steps.sim.outputs.udid }}" "$APP_BUNDLE_ID" data 2>/dev/null || true)
+          if [ -n "$CONTAINER" ] && [ -d "$CONTAINER/Documents/CIOutput" ]; then
+            cp -R "$CONTAINER/Documents/CIOutput/." artifacts/output/
+            echo "Collected:"; ls -lh artifacts/output
+          else
+            echo "No CIOutput directory found (nothing to collect)."
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caminata-ci-output
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14

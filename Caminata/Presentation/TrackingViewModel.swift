@@ -15,13 +15,13 @@ final class TrackingViewModel {
 
     private let store: WalkStore
     private let recorder: WalkRecorder
-    private let exporter: WalkExporter
+    private let exporter: WalkExporting
     private var ticker: Timer?
 
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
         recorder: WalkRecorder? = nil,
-        exporter: WalkExporter = WalkExporter()
+        exporter: WalkExporting = WalkExporter()
     ) {
         self.store = store
         self.recorder = recorder ?? WalkRecorder(store: store)
@@ -33,6 +33,10 @@ final class TrackingViewModel {
             self?.authorizationStatus = status
         }
         authorizationStatus = self.recorder.authorizationStatus
+    }
+
+    deinit {
+        ticker?.invalidate()
     }
 
     var permissionNeeded: Bool {

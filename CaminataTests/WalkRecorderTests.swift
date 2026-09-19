@@ -2,21 +2,6 @@ import CoreLocation
 import XCTest
 @testable import Caminata
 
-private final class SpyTracker: LocationTracking {
-    var authorizationStatus: CLAuthorizationStatus = .authorizedWhenInUse
-    var onLocations: (([CLLocation]) -> Void)?
-    var onAuthorizationChange: ((CLAuthorizationStatus) -> Void)?
-    var onFailure: ((Error) -> Void)?
-
-    private(set) var startCount = 0
-    private(set) var stopCount = 0
-    private(set) var authorizationRequests = 0
-
-    func requestAuthorization() { authorizationRequests += 1 }
-    func start() { startCount += 1 }
-    func stop() { stopCount += 1 }
-}
-
 final class WalkRecorderTests: XCTestCase {
     private var root: URL!
     private var store: WalkStore!

@@ -12,9 +12,16 @@ struct WalkExport: Identifiable {
     var attachments: [URL] { [imageURL, gpxURL] }
 }
 
+/// The export step, behind a protocol so the stop path can be exercised in
+/// tests without fetching map tiles.
+protocol WalkExporting {
+    func export(_ walk: Walk) async throws -> WalkExport
+    func emailBody(for walk: Walk) -> String
+}
+
 /// Turns a finished walk into the two files that get emailed: a map image and
 /// a GPX track.
-struct WalkExporter {
+struct WalkExporter: WalkExporting {
     var renderer = MapSnapshotRenderer()
     var fileManager: FileManager = .default
 

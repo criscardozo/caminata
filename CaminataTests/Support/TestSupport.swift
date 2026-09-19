@@ -1,6 +1,22 @@
+import CoreLocation
 import Foundation
 import UIKit
 @testable import Caminata
+
+final class SpyTracker: LocationTracking {
+    var authorizationStatus: CLAuthorizationStatus = .authorizedWhenInUse
+    var onLocations: (([CLLocation]) -> Void)?
+    var onAuthorizationChange: ((CLAuthorizationStatus) -> Void)?
+    var onFailure: ((Error) -> Void)?
+
+    private(set) var startCount = 0
+    private(set) var stopCount = 0
+    private(set) var authorizationRequests = 0
+
+    func requestAuthorization() { authorizationRequests += 1 }
+    func start() { startCount += 1 }
+    func stop() { stopCount += 1 }
+}
 
 enum TestRoute {
     static let origin = Coordinate(latitude: -34.603722, longitude: -58.381592)
@@ -135,4 +151,37 @@ extension UIImage {
             context.fill(CGRect(origin: .zero, size: size))
         }
     }
+}
+
+/// Stands in for the real exporter so the stop path can be tested without
+/// fetching map tiles.
+final class StubExporter: WalkExporting {
+    private(set) var exportedWalks: [Walk] = []
+    var failure: Error?
+
+    func export(_ walk: Walk) async throws -> WalkExport {
+        exportedWalks.append(walk)
+        if let failure { throw failure }
+
+        let image = UIImage.solid(.blue, size: CGSize(width: 40, height: 40))
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("StubExports/\(walk.id.uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let imageURL = directory.appendingPathComponent("walk.png")
+        let gpxURL = directory.appendingPathComponent("walk.gpx")
+        guard let png = image.pngData() else { throw CocoaError(.fileWriteUnknown) }
+        try png.write(to: imageURL)
+        try Data(GPXExporter.gpx(for: walk, name: "Stub walk").utf8).write(to: gpxURL)
+
+        return WalkExport(
+            walk: walk,
+            name: "Stub walk",
+            image: image,
+            imageURL: imageURL,
+            gpxURL: gpxURL
+        )
+    }
+
+    func emailBody(for walk: Walk) -> String { "Stub body" }
 }

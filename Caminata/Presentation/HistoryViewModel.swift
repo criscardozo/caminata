@@ -9,9 +9,9 @@ final class HistoryViewModel {
     var errorMessage: String?
 
     private let store: WalkStore
-    private let exporter: WalkExporter
+    private let exporter: WalkExporting
 
-    init(store: WalkStore, exporter: WalkExporter) {
+    init(store: WalkStore, exporter: WalkExporting) {
         self.store = store
         self.exporter = exporter
     }

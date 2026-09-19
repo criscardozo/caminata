@@ -43,11 +43,8 @@ targets:
         UIUserInterfaceStyle: Automatic
         ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: >-
-          Caminata uses your location to record the route you walk while a walk
-          is in progress.
-        NSLocationAlwaysAndWhenInUseUsageDescription: >-
-          Caminata keeps recording your route while the app is in the background
-          so your walk is not cut short when the screen locks.
+          Caminata records the route you walk while a walk is in progress,
+          including when the screen is locked.
         NSPhotoLibraryAddUsageDescription: >-
           Caminata saves the map image of your walk to your photo library when
           you choose to.

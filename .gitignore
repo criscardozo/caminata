@@ -27,6 +27,11 @@ Packages/
 artifacts/
 *.xcresult
 
+# Vercel: the local link and the OIDC token it downloads
+.vercel/
+.env.local
+.env*.local
+
 # Local tooling scratch
 .gstack/
 firebase-debug.log

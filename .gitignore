@@ -29,3 +29,6 @@ artifacts/
 
 # Local tooling scratch
 .gstack/
+firebase-debug.log
+firebase-debug.*.log
+.firebase/

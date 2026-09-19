@@ -14,6 +14,11 @@ struct WalkMetadata: Equatable, Codable, Identifiable, Sendable {
     var movingTime: TimeInterval?
     var elevationGain: Double?
 
+    /// When this walk reached Firestore. Nil for a walk recorded before the
+    /// cloud existed, one stopped with no signal, or one recorded while
+    /// signed out -- all of which are retried later.
+    var uploadedAt: Date?
+
     var isActive: Bool { endedAt == nil }
 
     var duration: TimeInterval? {

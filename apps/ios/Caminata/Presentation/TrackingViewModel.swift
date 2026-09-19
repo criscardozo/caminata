@@ -14,19 +14,30 @@ final class TrackingViewModel {
     var export: WalkExport?
     var errorMessage: String?
 
+    private(set) var accountName: String?
+    private(set) var pendingUploads = 0
+
     private let store: WalkStore
     private let recorder: WalkRecorder
     private let exporter: WalkExporting
+    private let account: CloudAccounting
+    private let uploader: WalkUploader
     private var ticker: Task<Void, Never>?
 
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
         recorder: WalkRecorder? = nil,
-        exporter: WalkExporting = WalkExporter()
+        exporter: WalkExporting = WalkExporter(),
+        account: CloudAccounting? = nil,
+        uploader: WalkUploader? = nil
     ) {
+        let account = account ?? FirebaseAccount()
         self.store = store
         self.recorder = recorder ?? WalkRecorder(store: store)
         self.exporter = exporter
+        self.account = account
+        self.uploader = uploader
+            ?? WalkUploader(store: store, sync: FirestoreWalkSync(account: account))
 
         self.recorder.onChange = { [weak self] in self?.refresh() }
         self.recorder.onError = { [weak self] error in self?.errorMessage = error.localizedDescription }
@@ -34,6 +45,41 @@ final class TrackingViewModel {
             self?.authorizationStatus = status
         }
         authorizationStatus = self.recorder.authorizationStatus
+
+        self.account.onChange = { [weak self] in self?.refreshAccount() }
+        self.uploader.onChange = { [weak self] in
+            self?.pendingUploads = self?.uploader.pendingCount ?? 0
+        }
+        refreshAccount()
+    }
+
+    // MARK: - Account
+
+    /// False in a build with no Firebase configuration, where the whole
+    /// account section is hidden rather than offered and then refused.
+    var cloudAvailable: Bool { account.isAvailable }
+    var isSignedIn: Bool { account.userID != nil }
+
+    func signIn() async {
+        do {
+            try await account.signIn()
+            await uploader.uploadPending()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func signOut() {
+        do {
+            try account.signOut()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func refreshAccount() {
+        accountName = account.displayName
+        uploader.refreshPendingCount()
     }
 
     var permissionNeeded: Bool {
@@ -50,6 +96,8 @@ final class TrackingViewModel {
             errorMessage = error.localizedDescription
         }
         refresh()
+        refreshAccount()
+        Task { await uploader.uploadPending() }
     }
 
     func toggleRecording() {
@@ -75,7 +123,13 @@ final class TrackingViewModel {
                 errorMessage = "That walk recorded no usable positions, so there is no map to draw."
                 return
             }
-            Task { await exportWalk(walk) }
+            Task {
+                await exportWalk(walk)
+                // A stop happens wherever the walk ended, which is where there
+                // is least likely to be signal. A failure here is not worth
+                // reporting: the walk stays queued and goes out later.
+                await uploader.upload(walk)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

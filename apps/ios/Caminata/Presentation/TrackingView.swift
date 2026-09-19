@@ -6,6 +6,7 @@ struct TrackingView: View {
     @State private var model = TrackingViewModel()
     @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var showingHistory = false
+    @State private var showingAccount = false
 
     var body: some View {
         NavigationStack {
@@ -25,6 +26,20 @@ struct TrackingView: View {
             .navigationTitle("Caminata")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if model.cloudAvailable {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showingAccount = true
+                        } label: {
+                            Label(
+                                "Account",
+                                systemImage: model.isSignedIn
+                                    ? "person.crop.circle.fill"
+                                    : "person.crop.circle"
+                            )
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingHistory = true
@@ -37,6 +52,9 @@ struct TrackingView: View {
         .onAppear { model.onAppear() }
         .sheet(isPresented: $showingHistory) {
             HistoryView(model: model.makeHistoryModel())
+        }
+        .sheet(isPresented: $showingAccount) {
+            AccountView(model: model)
         }
         .sheet(item: $model.export) { export in
             WalkSummaryView(export: export, emailBody: model.emailBody(for: export.walk))

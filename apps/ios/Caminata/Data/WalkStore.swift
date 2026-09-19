@@ -68,6 +68,12 @@ final class WalkStore {
         return metadata
     }
 
+    func markUploaded(walkID: UUID, at date: Date) throws {
+        var metadata = try loadMetadata(walkID)
+        metadata.uploadedAt = date
+        try write(metadata)
+    }
+
     func delete(walkID: UUID) throws {
         try fileManager.removeItem(at: directory(for: walkID))
     }

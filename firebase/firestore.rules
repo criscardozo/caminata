@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A walk belongs to exactly one account and is never shared. There is no
+    // Cloud Function in front of this -- the phone writes straight here -- so
+    // the shape is checked on the way in rather than taken on trust.
+    match /users/{userId}/walks/{walkId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.startedAt is timestamp
+        && request.resource.data.endedAt is timestamp
+        && request.resource.data.distance is number
+        && request.resource.data.distance >= 0
+        && request.resource.data.movingTime is number
+        && request.resource.data.movingTime >= 0
+        && request.resource.data.elevationGain is number
+        && request.resource.data.pointCount is int
+        && request.resource.data.route is list
+        // Flat [lat, lng, ...] pairs, and small enough to stay well inside the
+        // 1 MiB document limit however long the walk was.
+        && request.resource.data.route.size() % 2 == 0
+        && request.resource.data.route.size() <= 20000;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

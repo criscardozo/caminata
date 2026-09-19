@@ -13,12 +13,27 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
 
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: 12.0.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    exactVersion: 9.0.0
+
 targets:
   Caminata:
     type: application
     platform: iOS
     sources:
       - path: Caminata
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: GoogleSignIn
+        product: GoogleSignIn
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.1qlabs.caminata
@@ -28,6 +43,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
+        # Overridden in Caminata/Resources/Firebase.xcconfig when a real
+        # Firebase project is wired up; harmless while it is not.
+        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.unconfigured
     info:
       path: Caminata/Resources/Info.plist
       properties:
@@ -41,6 +59,9 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UIUserInterfaceStyle: Automatic
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - $(GOOGLE_REVERSED_CLIENT_ID)
         ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: >-
           Caminata records the route you walk while a walk is in progress,

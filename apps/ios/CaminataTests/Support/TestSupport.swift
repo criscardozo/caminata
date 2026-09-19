@@ -187,3 +187,42 @@ final class StubExporter: WalkExporting {
 
     func emailBody(for walk: Walk) -> String { "Stub body" }
 }
+
+/// Stands in for Firestore so the upload rules can be exercised without a
+/// network, a project, or an account.
+@MainActor
+final class StubSync: WalkSyncing {
+    var canUpload = true
+    var failure: Error?
+    private(set) var uploaded: [Walk] = []
+
+    func upload(_ walk: Walk) async throws {
+        if let failure { throw failure }
+        uploaded.append(walk)
+    }
+}
+
+@MainActor
+final class StubAccount: CloudAccounting {
+    var isAvailable = true
+    var userID: String? = "test-user"
+    var displayName: String? = "Test Walker"
+    var onChange: (() -> Void)?
+
+    var signOutCount = 0
+    var signInError: Error?
+
+    func signIn() async throws {
+        if let signInError { throw signInError }
+        userID = "test-user"
+        displayName = "Test Walker"
+        onChange?()
+    }
+
+    func signOut() throws {
+        signOutCount += 1
+        userID = nil
+        displayName = nil
+        onChange?()
+    }
+}

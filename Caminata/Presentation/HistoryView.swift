@@ -23,7 +23,7 @@ struct HistoryView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .onDelete(perform: model.delete)
+                        .onDelete { model.delete(at: $0) }
                     }
                 }
             }

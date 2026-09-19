@@ -21,9 +21,10 @@ struct MapSnapshotRenderer {
         let options = MKMapSnapshotter.Options()
         options.region = region
         options.size = size
-        options.mapType = .standard
-        options.pointOfInterestFilter = .excludingAll
-        options.showsBuildings = false
+        let configuration = MKStandardMapConfiguration(elevationStyle: .flat)
+        configuration.pointOfInterestFilter = .excludingAll
+        configuration.showsTraffic = false
+        options.preferredConfiguration = configuration
         // An emailed image should look the same whoever took it, so it does not
         // follow the sender's dark mode setting.
         options.traitCollection = UITraitCollection(userInterfaceStyle: .light)

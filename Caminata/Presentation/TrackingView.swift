@@ -1,5 +1,6 @@
 import MapKit
 import SwiftUI
+import UIKit
 
 struct TrackingView: View {
     @State private var model = TrackingViewModel()
@@ -70,7 +71,7 @@ struct TrackingView: View {
                 Annotation("Start", coordinate: start) {
                     Circle()
                         .fill(.green)
-                        .stroke(.white, lineWidth: 3)
+                        .overlay(Circle().strokeBorder(.white, lineWidth: 3))
                         .frame(width: 16, height: 16)
                 }
             }

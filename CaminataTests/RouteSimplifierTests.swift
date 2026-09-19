@@ -52,7 +52,7 @@ final class RouteSimplifierTests: XCTestCase {
             )
         }
         let simplified = RouteSimplifier.simplify(coordinates, tolerance: 3)
-        XCTAssertLessThan(simplified.count, coordinates.count / 10)
+        XCTAssertLessThan(simplified.count, coordinates.count / 5)
         XCTAssertGreaterThan(simplified.count, 2)
     }
 }

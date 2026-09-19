@@ -3,17 +3,38 @@
 An iOS app that records the GPS route of a walk, draws it on a map, and hands you
 the map image ready to email.
 
-Press **Play** and Caminata starts recording your position (including in the
-background, with the screen locked). Press **Stop** and it renders your route onto
-a map snapshot, exports a GPX track, and opens the Mail composer with both attached.
+Press **Play** and Caminata starts recording your position, including with the
+screen locked. Press **Stop** and it renders your route onto a map snapshot,
+exports a GPX track, and opens the Mail composer with both attached.
+
+## How it works
+
+- **Recording** — `LocationTracker` wraps `CLLocationManager` at navigation
+  accuracy with automatic pausing disabled, because iOS does not reliably resume
+  it mid-walk. When-in-use authorisation plus the `location` background mode is
+  enough to keep updates flowing in the background, so the app never asks for
+  always-on location.
+- **Filtering** — `LocationPointFilter` drops fixes that are inaccurate (worse
+  than 50 m), stale, within 3 m of the previous one (standing-still jitter), or
+  implausibly fast (a GPS teleport).
+- **Durability** — `WalkStore` writes each accepted point to an append-only file
+  and flushes it immediately. If the app is killed mid-walk the route is still on
+  disk, a half-written last line is discarded on load, and the walk is picked back
+  up on the next launch (unless it was abandoned more than 30 minutes ago).
+- **The map image** — `MapSnapshotRenderer` fetches Apple map tiles via
+  `MKMapSnapshotter` and projects the route into image space;
+  `RouteOverlayDrawer` composites the line, its light outline, start and end
+  markers and a caption. No API key, no billing, no request quota.
+- **Sending** — `MFMailComposeViewController` is prefilled with the PNG and the
+  GPX. No backend, no SMTP credentials, no secrets in the repo.
 
 ## Requirements
 
 - Xcode 15 or later, iOS 17+ deployment target
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the `.xcodeproj` is generated,
-  not committed
-- An Apple Developer account is **not** required to build or to run in the Simulator.
-  It is only needed to install on a physical device.
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the `.xcodeproj` is
+  generated, not committed
+- An Apple Developer account is **not** needed to build or to run in the
+  Simulator, only to install on a physical device
 
 ## Getting started
 
@@ -35,13 +56,21 @@ xcodebuild test -project Caminata.xcodeproj -scheme Caminata \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-CI runs the same build and test suite on every push (see `.github/workflows/ios.yml`).
+CI runs the same build and test suite on every push (`.github/workflows/ios.yml`)
+and uploads the map images the tests generate, so you can see a rendered route
+without a Mac. Download them from the workflow run's **Artifacts** section.
+
+Tests that need Apple's map tiles skip themselves when the network is
+unavailable; the drawing they cover is tested separately against a synthetic
+base image.
 
 ## Verifying background tracking
 
 Background location behaviour cannot be verified in the Simulator or in CI — it
-depends on how iOS schedules the app under real conditions. To check it, run the app
-on a physical device, start a walk, lock the screen, and walk for ten minutes or so.
-The blue location indicator should stay visible and the distance should keep climbing.
+depends on how iOS schedules the app under real conditions. Run the app on a
+physical device, start a walk, lock the screen, and walk for ten minutes or so.
+The blue location indicator should stay visible and the distance should keep
+climbing.
 
-In the Simulator you can still exercise the flow with **Debug → Simulate Location**.
+In the Simulator you can still exercise the flow with **Debug → Simulate
+Location**.

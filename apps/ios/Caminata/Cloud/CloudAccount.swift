@@ -26,6 +26,7 @@ final class FirebaseAccount: CloudAccounting {
         case notConfigured
         case noPresenter
         case missingIdentityToken
+        case urlSchemeMismatch(expected: String)
 
         var errorDescription: String? {
             switch self {
@@ -35,6 +36,13 @@ final class FirebaseAccount: CloudAccounting {
                 return "Could not find a window to present the Google sign-in sheet."
             case .missingIdentityToken:
                 return "Google signed you in but returned no identity token."
+            case let .urlSchemeMismatch(expected):
+                return """
+                    This build cannot complete a Google sign-in: GoogleService-Info.plist \
+                    expects the URL scheme \(expected), which is not registered. Set \
+                    GOOGLE_REVERSED_CLIENT_ID in apps/ios/project.yml to that value and \
+                    re-run xcodegen generate.
+                    """
             }
         }
     }
@@ -73,6 +81,9 @@ final class FirebaseAccount: CloudAccounting {
         guard let presenter = Self.topViewController() else {
             throw AccountError.noPresenter
         }
+        if let expected = Self.missingURLScheme(clientID: clientID) {
+            throw AccountError.urlSchemeMismatch(expected: expected)
+        }
 
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenter)
@@ -93,6 +104,27 @@ final class FirebaseAccount: CloudAccounting {
         GIDSignIn.sharedInstance.signOut()
         try Auth.auth().signOut()
         onChange?()
+    }
+
+    /// Google hands control back through a URL scheme, and that value lives in
+    /// two places nothing couples: `GOOGLE_REVERSED_CLIENT_ID` in project.yml,
+    /// which lands in `CFBundleURLTypes`, and `GoogleService-Info.plist`.
+    /// Registering a new app in Firebase issues a new OAuth client, so
+    /// replacing only the plist leaves sign-in rejected with no hint as to
+    /// why. Checked up front so the failure says exactly what to fix.
+    ///
+    /// Returns the scheme that should have been registered, or nil when it is.
+    static func missingURLScheme(clientID: String, bundle: Bundle = .main) -> String? {
+        let expected = reversedClientID(from: clientID)
+        let registered = (bundle.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] ?? [])
+            .flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
+        return registered.contains(expected) ? nil : expected
+    }
+
+    /// `1234-abc.apps.googleusercontent.com` becomes
+    /// `com.googleusercontent.apps.1234-abc`.
+    static func reversedClientID(from clientID: String) -> String {
+        clientID.split(separator: ".").reversed().joined(separator: ".")
     }
 
     /// Google Sign-In presents a sheet and so needs a view controller. SwiftUI

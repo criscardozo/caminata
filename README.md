@@ -98,6 +98,12 @@ Everything below is on the free Spark plan. Nothing here needs Blaze.
    in `apps/ios/project.yml`, then re-run `xcodegen generate`. Google Sign-In
    hands control back through that URL scheme, and it is the one value that
    cannot be read at runtime.
+
+   **Re-copy it whenever you register a new app in Firebase.** A new app gets a
+   new OAuth client, so replacing only `GoogleService-Info.plist` leaves the old
+   scheme registered and sign-in rejected. The app checks the two against each
+   other before it opens the sheet and names the scheme it expected, rather than
+   letting Google refuse with no explanation.
 4. Add a **Web** app, and paste its config into `apps/web/firebase-config.js`.
    Those values are public by design — Firestore is guarded by the rules, not by
    hiding them.

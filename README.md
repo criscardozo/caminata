@@ -14,8 +14,10 @@ history reads them.
 
 ```
 apps/ios/       the app: project.yml, Caminata/, CaminataTests/
-apps/web/       the history page: four files, no build step
-firebase/       firebase.json, firestore.rules, firestore.indexes.json
+apps/web/       the history page, no build step
+firebase/       firestore.rules, firestore.indexes.json
+icon/           the master icon and the script that derives the rest
+firebase.json   at the root, and it has to be
 .github/        CI
 ```
 
@@ -23,6 +25,11 @@ One directory per artefact that is built and deployed on its own; anything that
 belongs to the repo rather than to an artefact lives at the root. The Firestore
 rules sit under `firebase/` even though the web page is what reads them,
 because they are the project's, not the page's.
+
+`firebase.json` is the exception that proves it: Hosting refuses a `public`
+path outside the directory holding the config, so with the config under
+`firebase/` the only way to point at `apps/web` would be `../apps/web`, and the
+CLI rejects it. It lives at the root and refers down into `firebase/` instead.
 
 ## How it works
 
@@ -123,15 +130,20 @@ Everything below is on the free Spark plan. Nothing here needs Blaze.
    other before it opens the sheet and names the scheme it expected, rather than
    letting Google refuse with no explanation.
 4. Add a **Web** app, and paste its config into `apps/web/firebase-config.js`.
-   Those values are public by design — Firestore is guarded by the rules, not by
-   hiding them.
+   Those values are public by design and this one **is** committed, unlike the
+   iOS plist: the file is served verbatim to every visitor, so keeping it out of
+   the repo would buy nothing. Firestore is guarded by the rules. Worth
+   restricting the key to HTTP referrers in the Google Cloud console so a
+   scraped copy cannot spend the free tier from elsewhere.
 5. Deploy:
    ```sh
-   firebase deploy --config firebase/firebase.json --only firestore:rules,hosting
+   firebase deploy --only firestore:rules,hosting
    ```
 
 Sign in with the same Google account on the phone and on the web, and the
 history lines up.
+
+The live history is at <https://qcris-caminata.web.app>.
 
 ## Tests
 

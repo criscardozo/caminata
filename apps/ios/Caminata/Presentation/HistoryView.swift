@@ -23,7 +23,9 @@ struct HistoryView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .onDelete { model.delete(at: $0) }
+                        .onDelete { offsets in
+                            Task { await model.delete(at: offsets) }
+                        }
                     }
                 }
             }

@@ -105,6 +105,39 @@ final class WalkUploaderTests: XCTestCase {
         XCTAssertEqual(notifications, 1)
     }
 
+    func testDeletingAnUploadedWalkClearsTheCloudCopyToo() throws {
+        let walk = try storeFinishedWalk()
+        XCTAssertTrue(runUpload(walk))
+
+        let metadata = try store.loadMetadata(walk.id)
+        XCTAssertNoThrow(try runDelete(metadata))
+
+        XCTAssertEqual(sync.deleted, [walk.id])
+        XCTAssertTrue(try store.listWalks().isEmpty)
+    }
+
+    func testAWalkThatNeverReachedTheCloudIsJustDeletedLocally() throws {
+        let walk = try storeFinishedWalk()
+
+        let metadata = try store.loadMetadata(walk.id)
+        XCTAssertNoThrow(try runDelete(metadata))
+
+        XCTAssertTrue(sync.deleted.isEmpty)
+        XCTAssertTrue(try store.listWalks().isEmpty)
+    }
+
+    func testAFailedCloudDeleteKeepsTheWalkRatherThanStrandingItOnTheWeb() throws {
+        let walk = try storeFinishedWalk()
+        XCTAssertTrue(runUpload(walk))
+        sync.deleteFailure = URLError(.notConnectedToInternet)
+
+        let metadata = try store.loadMetadata(walk.id)
+        XCTAssertThrowsError(try runDelete(metadata))
+
+        // Still on the phone, so there is something left to retry with.
+        XCTAssertEqual(try store.listWalks().count, 1)
+    }
+
     // MARK: - Helpers
 
     private func runUpload(_ walk: Walk) -> Bool {
@@ -113,6 +146,17 @@ final class WalkUploaderTests: XCTestCase {
         Task { sent = await uploader.upload(walk); done.fulfill() }
         wait(for: [done], timeout: 5)
         return sent
+    }
+
+    private func runDelete(_ metadata: WalkMetadata) throws {
+        var thrown: Error?
+        let done = expectation(description: "delete")
+        Task {
+            do { try await uploader.delete(metadata) } catch { thrown = error }
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
+        if let thrown { throw thrown }
     }
 
     private func runPending() {

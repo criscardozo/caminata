@@ -8,6 +8,7 @@ protocol WalkSyncing: AnyObject {
     /// True when there is both a Firebase configuration and someone signed in.
     var canUpload: Bool { get }
     func upload(_ walk: Walk) async throws
+    func delete(walkID: UUID) async throws
 }
 
 @MainActor
@@ -38,12 +39,20 @@ final class FirestoreWalkSync: WalkSyncing {
         guard let userID = account.userID else { throw SyncError.signedOut }
         guard let cloud = CloudWalk(walk: walk) else { throw SyncError.nothingToUpload }
 
-        try await Firestore.firestore()
+        try await document(userID: userID, walkID: cloud.id).setData(cloud.firestoreData)
+    }
+
+    func delete(walkID: UUID) async throws {
+        guard let userID = account.userID else { throw SyncError.signedOut }
+        try await document(userID: userID, walkID: walkID).delete()
+    }
+
+    private func document(userID: String, walkID: UUID) -> DocumentReference {
+        Firestore.firestore()
             .collection("users")
             .document(userID)
             .collection("walks")
-            .document(cloud.id.uuidString)
-            .setData(cloud.firestoreData)
+            .document(walkID.uuidString)
     }
 }
 

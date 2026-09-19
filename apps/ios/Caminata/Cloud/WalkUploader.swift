@@ -45,6 +45,17 @@ final class WalkUploader {
         }
     }
 
+    /// Removes a walk from both sides. The cloud copy goes first: if that
+    /// fails there is no signal, and deleting locally anyway would strand a
+    /// copy on the web that nothing can ever reach again.
+    func delete(_ metadata: WalkMetadata) async throws {
+        if metadata.uploadedAt != nil, sync.canUpload {
+            try await sync.delete(walkID: metadata.id)
+        }
+        try store.delete(walkID: metadata.id)
+        refreshPendingCount()
+    }
+
     /// Walks that are finished but have never reached the cloud, newest first.
     func pending() -> [WalkMetadata] {
         let walks = (try? store.listWalks()) ?? []

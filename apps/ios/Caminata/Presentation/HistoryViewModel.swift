@@ -11,10 +11,12 @@ final class HistoryViewModel {
 
     private let store: WalkStore
     private let exporter: WalkExporting
+    private let uploader: WalkUploader?
 
-    init(store: WalkStore, exporter: WalkExporting) {
+    init(store: WalkStore, exporter: WalkExporting, uploader: WalkUploader? = nil) {
         self.store = store
         self.exporter = exporter
+        self.uploader = uploader
     }
 
     func load() {
@@ -44,15 +46,24 @@ final class HistoryViewModel {
         exporter.emailBody(for: walk)
     }
 
-    func delete(at offsets: IndexSet) {
-        for index in offsets {
-            let walk = walks[index]
+    /// Deleting has to reach the cloud copy too, or a walk removed on the
+    /// phone would sit on the web forever with nothing left to remove it.
+    func delete(at offsets: IndexSet) async {
+        var removed: [UUID] = []
+
+        for metadata in offsets.map({ walks[$0] }) {
             do {
-                try store.delete(walkID: walk.id)
+                if let uploader {
+                    try await uploader.delete(metadata)
+                } else {
+                    try store.delete(walkID: metadata.id)
+                }
+                removed.append(metadata.id)
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = "Could not delete that walk from the web. Try again with a connection."
             }
         }
-        walks.remove(atOffsets: offsets)
+
+        walks.removeAll { removed.contains($0.id) }
     }
 }

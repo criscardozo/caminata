@@ -194,11 +194,18 @@ final class StubExporter: WalkExporting {
 final class StubSync: WalkSyncing {
     var canUpload = true
     var failure: Error?
+    var deleteFailure: Error?
     private(set) var uploaded: [Walk] = []
+    private(set) var deleted: [UUID] = []
 
     func upload(_ walk: Walk) async throws {
         if let failure { throw failure }
         uploaded.append(walk)
+    }
+
+    func delete(walkID: UUID) async throws {
+        if let deleteFailure { throw deleteFailure }
+        deleted.append(walkID)
     }
 }
 

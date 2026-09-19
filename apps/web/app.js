@@ -10,6 +10,7 @@ import {
   collection,
   getDocs,
   getFirestore,
+  limit,
   orderBy,
   query,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
@@ -134,9 +135,17 @@ function toWalk(doc) {
   };
 }
 
+/// Capped because every document read counts against the free Firestore
+/// quota, and nobody scrolls back past a couple of hundred walks.
+const HISTORY_LIMIT = 200;
+
 async function loadWalks(uid) {
   const snapshot = await getDocs(
-    query(collection(db, "users", uid, "walks"), orderBy("startedAt", "desc")),
+    query(
+      collection(db, "users", uid, "walks"),
+      orderBy("startedAt", "desc"),
+      limit(HISTORY_LIMIT),
+    ),
   );
   return snapshot.docs.map(toWalk);
 }
@@ -169,7 +178,9 @@ function select(walks, id) {
   const walk = walks.find((w) => w.id === id);
   if (!walk) return;
   for (const node of document.querySelectorAll(".walk-list li")) {
-    node.classList.toggle("selected", node.dataset.id === id);
+    const selected = node.dataset.id === id;
+    node.classList.toggle("selected", selected);
+    node.setAttribute("aria-current", selected ? "true" : "false");
   }
   renderDetail(walk);
 }
@@ -182,6 +193,8 @@ function renderList(walks) {
     const item = document.createElement("li");
     item.dataset.id = walk.id;
     item.tabIndex = 0;
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-label", `${walkName(walk.startedAt)}, ${metres(walk.distance)}`);
     item.innerHTML =
       `<strong>${walkName(walk.startedAt)}</strong>` +
       `<span>${metres(walk.distance)} · ${duration(walk.movingTime)}</span>`;

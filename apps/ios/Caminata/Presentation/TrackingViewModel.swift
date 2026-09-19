@@ -23,6 +23,9 @@ final class TrackingViewModel {
     private let account: CloudAccounting
     private let uploader: WalkUploader
     private var ticker: Task<Void, Never>?
+    /// The ticker fires once a second whether or not a fix arrived, and the
+    /// coordinates only change when one did.
+    private var renderedPointCount = 0
 
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
@@ -150,7 +153,7 @@ final class TrackingViewModel {
     }
 
     func makeHistoryModel() -> HistoryViewModel {
-        HistoryViewModel(store: store, exporter: exporter)
+        HistoryViewModel(store: store, exporter: exporter, uploader: uploader)
     }
 
     // MARK: - Private
@@ -158,11 +161,14 @@ final class TrackingViewModel {
     private func refresh() {
         isRecording = recorder.isRecording
         let points = recorder.points
-        coordinates = points.map {
-            CLLocationCoordinate2D(
-                latitude: $0.coordinate.latitude,
-                longitude: $0.coordinate.longitude
-            )
+        if points.count != renderedPointCount {
+            renderedPointCount = points.count
+            coordinates = points.map {
+                CLLocationCoordinate2D(
+                    latitude: $0.coordinate.latitude,
+                    longitude: $0.coordinate.longitude
+                )
+            }
         }
         stats = WalkStats.compute(from: points, endedAt: isRecording ? Date() : nil)
         if isRecording, ticker == nil {

@@ -10,6 +10,12 @@ service cloud.firestore {
 
       allow create, update: if request.auth != null
         && request.auth.uid == userId
+        // Nothing beyond the fields the app writes: without this a client
+        // could park arbitrary data here under its own uid.
+        && request.resource.data.keys().hasOnly([
+             'startedAt', 'endedAt', 'distance', 'movingTime',
+             'elevationGain', 'pointCount', 'route', 'uploadedAt'
+           ])
         && request.resource.data.startedAt is timestamp
         && request.resource.data.endedAt is timestamp
         && request.resource.data.distance is number

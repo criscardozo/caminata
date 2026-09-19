@@ -5,6 +5,7 @@ enum PointRejection: Equatable, Sendable {
     case invalidFix
     case poorAccuracy(Double)
     case stale(TimeInterval)
+    case outOfOrder
     case tooClose(Double)
     case implausibleSpeed(Double)
 }
@@ -33,16 +34,26 @@ struct LocationPointFilter: Sendable {
             return .reject(.poorAccuracy(candidate.horizontalAccuracy))
         }
 
-        let age = now.timeIntervalSince(candidate.timestamp)
-        guard age <= maximumAge else {
-            return .reject(.stale(age))
+        // Age is only checked for the first fix of a walk. CoreLocation hands
+        // over a cached position the moment updates start, and seeding a walk
+        // with it puts the start marker wherever the phone last had a fix.
+        // Later fixes arrive in batches when iOS wakes the app, so they are
+        // legitimately older than `now`; dropping those would punch holes in
+        // exactly the background stretch the app exists to record. They are
+        // sanity-checked against their predecessor instead.
+        guard let previous else {
+            let age = now.timeIntervalSince(candidate.timestamp)
+            return age <= maximumAge ? .accept : .reject(.stale(age))
         }
 
-        guard let previous else { return .accept }
+        // A batch can arrive out of order, and a replayed cached fix would
+        // otherwise be stitched into the route as if the walker had doubled
+        // back in negative time.
+        let interval = candidate.timestamp.timeIntervalSince(previous.timestamp)
+        guard interval > 0 else { return .reject(.outOfOrder) }
 
         let distance = GeoMath.distance(from: previous.coordinate, to: candidate.coordinate)
-        let interval = candidate.timestamp.timeIntervalSince(previous.timestamp)
-        if interval > 0, distance / interval > maximumSpeed {
+        guard distance / interval <= maximumSpeed else {
             return .reject(.implausibleSpeed(distance / interval))
         }
         guard distance >= minimumDistance else {

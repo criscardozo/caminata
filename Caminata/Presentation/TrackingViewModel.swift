@@ -2,6 +2,7 @@ import CoreLocation
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 final class TrackingViewModel {
     private(set) var isRecording = false
@@ -16,7 +17,7 @@ final class TrackingViewModel {
     private let store: WalkStore
     private let recorder: WalkRecorder
     private let exporter: WalkExporting
-    private var ticker: Timer?
+    private var ticker: Task<Void, Never>?
 
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
@@ -33,10 +34,6 @@ final class TrackingViewModel {
             self?.authorizationStatus = status
         }
         authorizationStatus = self.recorder.authorizationStatus
-    }
-
-    deinit {
-        ticker?.invalidate()
     }
 
     var permissionNeeded: Bool {
@@ -120,15 +117,22 @@ final class TrackingViewModel {
     }
 
     /// The elapsed time has to keep moving even when no new fix arrives.
+    ///
+    /// Weakly captured so that a model dropped mid-walk takes its ticker with
+    /// it instead of leaving one running against nothing.
     private func startTicking() {
         stopTicking()
-        ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            self?.refresh()
+        ticker = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, let self else { return }
+                self.refresh()
+            }
         }
     }
 
     private func stopTicking() {
-        ticker?.invalidate()
+        ticker?.cancel()
         ticker = nil
     }
 }

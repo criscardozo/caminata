@@ -2,13 +2,14 @@ import CoreLocation
 import XCTest
 @testable import Caminata
 
+@MainActor
 final class WalkRecorderTests: XCTestCase {
     private var root: URL!
     private var store: WalkStore!
     private var tracker: SpyTracker!
     private var recorder: WalkRecorder!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("WalkRecorderTests-\(UUID().uuidString)", isDirectory: true)
         store = WalkStore(root: root)
@@ -16,7 +17,7 @@ final class WalkRecorderTests: XCTestCase {
         recorder = WalkRecorder(store: store, tracker: tracker)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try? FileManager.default.removeItem(at: root)
     }
 

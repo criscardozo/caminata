@@ -3,6 +3,7 @@ import Foundation
 
 /// Owns an in-progress walk: takes fixes from the tracker, filters them, keeps
 /// them in memory for the live UI, and writes each accepted one straight to disk.
+@MainActor
 final class WalkRecorder {
     /// A walk left open for longer than this was not interrupted, it was
     /// abandoned, so it is closed instead of silently resumed.
@@ -84,7 +85,10 @@ final class WalkRecorder {
     /// Picks a walk back up if the app was killed while recording, or closes it
     /// if too much time has passed for resuming to make sense.
     func restore(now: Date = Date()) throws {
-        guard let active = try store.activeWalk() else { return }
+        // The view calls this on every appearance, and picking a walk back up
+        // on top of one already running would reload its points off disk and
+        // start the tracker a second time.
+        guard !isRecording, let active = try store.activeWalk() else { return }
 
         let recorded = try store.loadPoints(active.id)
         let lastActivity = recorded.last?.timestamp ?? active.startedAt

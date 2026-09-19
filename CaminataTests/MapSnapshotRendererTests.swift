@@ -5,6 +5,7 @@ import XCTest
 /// These exercise the whole export path against real Apple map tiles, so they
 /// need the network. When tiles cannot be fetched the test skips rather than
 /// failing: the drawing itself is covered by RouteOverlayDrawerTests.
+@MainActor
 final class MapSnapshotRendererTests: XCTestCase {
     func testRendersARouteOntoRealMapTiles() async throws {
         let walk = TestRoute.walk()

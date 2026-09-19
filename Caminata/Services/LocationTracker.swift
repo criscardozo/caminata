@@ -3,6 +3,7 @@ import Foundation
 
 /// The slice of CoreLocation the recorder depends on, so the recording rules
 /// can be tested without a location manager in the loop.
+@MainActor
 protocol LocationTracking: AnyObject {
     var authorizationStatus: CLAuthorizationStatus { get }
     var onLocations: (([CLLocation]) -> Void)? { get set }
@@ -17,7 +18,8 @@ protocol LocationTracking: AnyObject {
 /// Thin wrapper over CLLocationManager.
 ///
 /// Callbacks are delivered on the main queue, because the manager is created
-/// there; everything downstream of it assumes the main thread.
+/// there; everything downstream of it is main-actor isolated to match.
+@MainActor
 final class LocationTracker: NSObject, LocationTracking {
     private let manager: CLLocationManager
 
@@ -58,7 +60,7 @@ final class LocationTracker: NSObject, LocationTracking {
     }
 }
 
-extension LocationTracker: CLLocationManagerDelegate {
+extension LocationTracker: @preconcurrency CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         onLocations?(locations)
     }

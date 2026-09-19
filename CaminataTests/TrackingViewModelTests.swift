@@ -2,6 +2,7 @@ import CoreLocation
 import XCTest
 @testable import Caminata
 
+@MainActor
 final class TrackingViewModelTests: XCTestCase {
     private var root: URL!
     private var store: WalkStore!
@@ -10,7 +11,7 @@ final class TrackingViewModelTests: XCTestCase {
     private var exporter: StubExporter!
     private var model: TrackingViewModel!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("TrackingViewModelTests-\(UUID().uuidString)", isDirectory: true)
         store = WalkStore(root: root)
@@ -20,7 +21,7 @@ final class TrackingViewModelTests: XCTestCase {
         model = TrackingViewModel(store: store, recorder: recorder, exporter: exporter)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         model = nil
         try? FileManager.default.removeItem(at: root)
     }

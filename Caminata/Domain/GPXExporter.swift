@@ -34,7 +34,9 @@ enum GPXExporter {
         return xml
     }
 
-    private static let formatter: ISO8601DateFormatter = {
+    /// Date formatters are thread-safe once configured, and building one per
+    /// timestamp would dominate the cost of exporting a long walk.
+    nonisolated(unsafe) private static let formatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         formatter.timeZone = TimeZone(secondsFromGMT: 0)

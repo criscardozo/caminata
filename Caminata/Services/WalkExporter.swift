@@ -14,6 +14,7 @@ struct WalkExport: Identifiable {
 
 /// The export step, behind a protocol so the stop path can be exercised in
 /// tests without fetching map tiles.
+@MainActor
 protocol WalkExporting {
     func export(_ walk: Walk) async throws -> WalkExport
     func emailBody(for walk: Walk) -> String

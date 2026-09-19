@@ -1,3 +1,4 @@
+import Photos
 import SwiftUI
 import UIKit
 
@@ -8,6 +9,7 @@ struct WalkSummaryView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingMail = false
     @State private var savedToPhotos = false
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -40,8 +42,7 @@ struct WalkSummaryView: View {
                         .buttonStyle(.bordered)
 
                         Button {
-                            UIImageWriteToSavedPhotosAlbum(export.image, nil, nil, nil)
-                            savedToPhotos = true
+                            Task { await saveToPhotos() }
                         } label: {
                             Label(
                                 savedToPhotos ? "Saved to Photos" : "Save to Photos",
@@ -63,6 +64,11 @@ struct WalkSummaryView: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .alert("Caminata", isPresented: saveErrorBinding) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveErrorMessage ?? "")
+            }
             .sheet(isPresented: $showingMail) {
                 MailComposeView(
                     subject: export.name,
@@ -73,6 +79,27 @@ struct WalkSummaryView: View {
                 .ignoresSafeArea()
             }
         }
+    }
+
+    /// Goes through PhotosKit rather than `UIImageWriteToSavedPhotosAlbum` so
+    /// that a refused permission is reported instead of leaving the button
+    /// claiming the image was saved when it never was.
+    private func saveToPhotos() async {
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.creationRequestForAsset(from: export.image)
+            }
+            savedToPhotos = true
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var saveErrorBinding: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { presented in if !presented { saveErrorMessage = nil } }
+        )
     }
 
     private var statsGrid: some View {

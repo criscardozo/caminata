@@ -3,6 +3,7 @@ import Foundation
 import UIKit
 @testable import Caminata
 
+@MainActor
 final class SpyTracker: LocationTracking {
     var authorizationStatus: CLAuthorizationStatus = .authorizedWhenInUse
     var onLocations: (([CLLocation]) -> Void)?
@@ -155,6 +156,7 @@ extension UIImage {
 
 /// Stands in for the real exporter so the stop path can be tested without
 /// fetching map tiles.
+@MainActor
 final class StubExporter: WalkExporting {
     private(set) var exportedWalks: [Walk] = []
     var failure: Error?

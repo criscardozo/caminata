@@ -8,9 +8,14 @@
 // NOT committed: that one ships inside a signed binary nobody downloads, so
 // keeping it out of a public repo costs nothing and saves a quota.
 //
-// Worth doing in the Google Cloud console: restrict this API key to HTTP
-// referrers for the authorised domains, so a scraped copy cannot spend the
-// project's free tier from somewhere else.
+// This key is restricted to HTTP referrers -- caminata.cardozo.dev, the
+// Vercel production URL, and qcris-caminata.firebaseapp.com, which is where
+// the Google sign-in popup runs. A copy lifted from here answers 403 from
+// anywhere else, so it cannot spend the project's free tier.
+//
+// GitHub secret scanning flags this file. That alert is expected and is
+// closed as won't-fix: the value is meant to be public, and what guards the
+// data is firebase/firestore.rules.
 export const firebaseConfig = {
   apiKey: "AIzaSyBtaWA_msOhoa6pHcRubhkW5E794M19nRI",
   authDomain: "qcris-caminata.firebaseapp.com",

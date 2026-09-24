@@ -8,6 +8,10 @@ struct WalkExport: Identifiable {
     let imageURL: URL
     let gpxURL: URL
 
+    /// Set once the walk is known to be in the cloud, because a link to a walk
+    /// that never got there opens a page that cannot show it.
+    var webURL: URL?
+
     var id: UUID { walk.id }
     var attachments: [URL] { [imageURL, gpxURL] }
 }
@@ -17,7 +21,7 @@ struct WalkExport: Identifiable {
 @MainActor
 protocol WalkExporting {
     func export(_ walk: Walk) async throws -> WalkExport
-    func emailBody(for walk: Walk) -> String
+    func emailBody(for walk: Walk, webURL: URL?) -> String
 }
 
 /// Turns a finished walk into the two files that get emailed: a map image and
@@ -25,12 +29,13 @@ protocol WalkExporting {
 struct WalkExporter: WalkExporting {
     var renderer = MapSnapshotRenderer()
     var fileManager: FileManager = .default
+    var settings: AppSettings
 
     func export(_ walk: Walk) async throws -> WalkExport {
         let name = WalkFormatting.walkName(startedAt: walk.startedAt)
         let image = try await renderer.render(
             walk: walk,
-            caption: WalkFormatting.summaryCaption(for: walk)
+            caption: settings.captionOnImage ? WalkFormatting.summaryCaption(for: walk) : nil
         )
 
         let directory = fileManager.temporaryDirectory
@@ -38,8 +43,8 @@ struct WalkExporter: WalkExporting {
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let stamp = WalkFormatting.fileStamp(walk.startedAt)
-        let imageURL = directory.appendingPathComponent("walk-\(stamp).png")
-        let gpxURL = directory.appendingPathComponent("walk-\(stamp).gpx")
+        let imageURL = directory.appendingPathComponent("caminata-\(stamp).png")
+        let gpxURL = directory.appendingPathComponent("caminata-\(stamp).gpx")
 
         guard let png = image.pngData() else {
             throw CocoaError(.fileWriteUnknown)
@@ -57,18 +62,23 @@ struct WalkExporter: WalkExporting {
         )
     }
 
-    func emailBody(for walk: Walk) -> String {
+    func emailBody(for walk: Walk, webURL: URL? = nil) -> String {
         let stats = walk.stats
-        return """
+        var body = """
         \(WalkFormatting.walkName(startedAt: walk.startedAt))
 
-        Distance: \(WalkFormatting.distance(stats.distance))
-        Duration: \(WalkFormatting.duration(stats.elapsed))
-        Moving time: \(WalkFormatting.duration(stats.movingTime))
-        Average pace: \(WalkFormatting.pace(stats.averagePace))
-        Elevation gain: \(WalkFormatting.elevation(stats.elevationGain))
+        Distancia: \(WalkFormatting.distance(stats.distance))
+        Duración: \(WalkFormatting.duration(stats.elapsed))
+        En movimiento: \(WalkFormatting.duration(stats.movingTime))
+        Ritmo promedio: \(WalkFormatting.pace(stats.averagePace))
+        Desnivel acumulado: \(WalkFormatting.elevation(stats.elevationGain))
 
-        The map image and the GPX track are attached.
+        Van adjuntos la imagen del mapa y el track GPX.
         """
+
+        if let webURL {
+            body += "\n\nVerla en la web: \(webURL.absoluteString)"
+        }
+        return body
     }
 }

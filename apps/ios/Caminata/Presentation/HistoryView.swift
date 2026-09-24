@@ -9,9 +9,9 @@ struct HistoryView: View {
             Group {
                 if model.walks.isEmpty {
                     ContentUnavailableView(
-                        "No walks yet",
+                        "Todavía no hay caminatas",
                         systemImage: "figure.walk",
-                        description: Text("Walks you finish will be listed here.")
+                        description: Text("Las caminatas que termines aparecen acá.")
                     )
                 } else {
                     List {
@@ -29,16 +29,16 @@ struct HistoryView: View {
                     }
                 }
             }
-            .navigationTitle("History")
+            .navigationTitle("Historial")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Listo") { dismiss() }
                 }
             }
             .overlay {
                 if model.isExporting {
-                    ProgressView("Drawing your route")
+                    ProgressView("Dibujando tu recorrido")
                         .padding(24)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
@@ -46,10 +46,10 @@ struct HistoryView: View {
         }
         .onAppear { model.load() }
         .sheet(item: $model.export) { export in
-            WalkSummaryView(export: export, emailBody: model.emailBody(for: export.walk))
+            WalkSummaryView(export: export, emailBody: model.emailBody(for: export))
         }
         .alert("Caminata", isPresented: errorBinding) {
-            Button("OK", role: .cancel) {}
+            Button("Entendido", role: .cancel) {}
         } message: {
             Text(model.errorMessage ?? "")
         }
@@ -74,7 +74,7 @@ struct HistoryView: View {
         if let duration = walk.duration {
             parts.append(WalkFormatting.duration(duration))
         }
-        return parts.isEmpty ? "Tap to open" : parts.joined(separator: "  ·  ")
+        return parts.isEmpty ? "Tocá para abrir" : parts.joined(separator: "  ·  ")
     }
 
     private var errorBinding: Binding<Bool> {

@@ -22,6 +22,7 @@ final class TrackingViewModel {
     private let exporter: WalkExporting
     private let account: CloudAccounting
     private let uploader: WalkUploader
+    let settings: AppSettings
     private var ticker: Task<Void, Never>?
     /// The ticker fires once a second whether or not a fix arrived, and the
     /// coordinates only change when one did.
@@ -30,14 +31,16 @@ final class TrackingViewModel {
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
         recorder: WalkRecorder? = nil,
-        exporter: WalkExporting = WalkExporter(),
+        exporter: WalkExporting? = nil,
         account: CloudAccounting? = nil,
-        uploader: WalkUploader? = nil
+        uploader: WalkUploader? = nil,
+        settings: AppSettings = AppSettings()
     ) {
         let account = account ?? FirebaseAccount()
         self.store = store
         self.recorder = recorder ?? WalkRecorder(store: store)
-        self.exporter = exporter
+        self.settings = settings
+        self.exporter = exporter ?? WalkExporter(settings: settings)
         self.account = account
         self.uploader = uploader
             ?? WalkUploader(store: store, sync: FirestoreWalkSync(account: account))
@@ -123,15 +126,18 @@ final class TrackingViewModel {
             guard let walk = try recorder.stop() else { return }
             refresh()
             guard !walk.points.isEmpty else {
-                errorMessage = "That walk recorded no usable positions, so there is no map to draw."
+                errorMessage = "Esa caminata no registró posiciones utilizables, así que no hay mapa para dibujar."
                 return
             }
             Task {
                 await exportWalk(walk)
                 // A stop happens wherever the walk ended, which is where there
                 // is least likely to be signal. A failure here is not worth
-                // reporting: the walk stays queued and goes out later.
-                await uploader.upload(walk)
+                // reporting: the walk stays queued and goes out later -- and
+                // the web link only appears once the walk is actually there.
+                if await uploader.upload(walk), export?.id == walk.id {
+                    export?.webURL = WebHistory.url(for: walk.id)
+                }
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -148,8 +154,8 @@ final class TrackingViewModel {
         }
     }
 
-    func emailBody(for walk: Walk) -> String {
-        exporter.emailBody(for: walk)
+    func emailBody(for export: WalkExport) -> String {
+        exporter.emailBody(for: export.walk, webURL: export.webURL)
     }
 
     func makeHistoryModel() -> HistoryViewModel {

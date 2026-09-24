@@ -6,7 +6,7 @@ struct TrackingView: View {
     @State private var model = TrackingViewModel()
     @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var showingHistory = false
-    @State private var showingAccount = false
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -26,25 +26,18 @@ struct TrackingView: View {
             .navigationTitle("Caminata")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if model.cloudAvailable {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            showingAccount = true
-                        } label: {
-                            Label(
-                                "Account",
-                                systemImage: model.isSignedIn
-                                    ? "person.crop.circle.fill"
-                                    : "person.crop.circle"
-                            )
-                        }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label("Ajustes", systemImage: "gearshape")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingHistory = true
                     } label: {
-                        Label("History", systemImage: "list.bullet")
+                        Label("Historial", systemImage: "list.bullet")
                     }
                 }
             }
@@ -53,21 +46,21 @@ struct TrackingView: View {
         .sheet(isPresented: $showingHistory) {
             HistoryView(model: model.makeHistoryModel())
         }
-        .sheet(isPresented: $showingAccount) {
-            AccountView(model: model)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(model: model)
         }
         .sheet(item: $model.export) { export in
-            WalkSummaryView(export: export, emailBody: model.emailBody(for: export.walk))
+            WalkSummaryView(export: export, emailBody: model.emailBody(for: export))
         }
         .overlay {
             if model.isExporting {
-                ProgressView("Drawing your route")
+                ProgressView("Dibujando tu recorrido")
                     .padding(24)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .alert("Caminata", isPresented: errorBinding) {
-            Button("OK", role: .cancel) {}
+            Button("Entendido", role: .cancel) {}
         } message: {
             Text(model.errorMessage ?? "")
         }
@@ -86,7 +79,7 @@ struct TrackingView: View {
             }
 
             if let start = model.coordinates.first {
-                Annotation("Start", coordinate: start) {
+                Annotation("Inicio", coordinate: start) {
                     Circle()
                         .fill(.green)
                         .overlay(Circle().strokeBorder(.white, lineWidth: 3))
@@ -102,11 +95,11 @@ struct TrackingView: View {
 
     private var statsPanel: some View {
         HStack {
-            stat("Distance", WalkFormatting.distance(model.stats.distance))
+            stat("Distancia", WalkFormatting.distance(model.stats.distance))
             divider
-            stat("Time", WalkFormatting.duration(model.stats.elapsed))
+            stat("Tiempo", WalkFormatting.duration(model.stats.elapsed))
             divider
-            stat("Pace", WalkFormatting.pace(model.stats.averagePace))
+            stat("Ritmo", WalkFormatting.pace(model.stats.averagePace))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
@@ -138,7 +131,7 @@ struct TrackingView: View {
             model.toggleRecording()
         } label: {
             Label(
-                model.isRecording ? "Stop" : "Play",
+                model.isRecording ? "Detener" : "Empezar",
                 systemImage: model.isRecording ? "stop.fill" : "play.fill"
             )
             .font(.title3.weight(.semibold))
@@ -152,10 +145,10 @@ struct TrackingView: View {
 
     private var permissionBanner: some View {
         VStack(spacing: 8) {
-            Text("Caminata needs your location to record a walk.")
+            Text("Caminata necesita tu ubicación para registrar el recorrido.")
                 .font(.footnote)
                 .multilineTextAlignment(.center)
-            Button("Open Settings") {
+            Button("Abrir Ajustes") {
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                 UIApplication.shared.open(url)
             }

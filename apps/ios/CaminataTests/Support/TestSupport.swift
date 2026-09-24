@@ -185,7 +185,9 @@ final class StubExporter: WalkExporting {
         )
     }
 
-    func emailBody(for walk: Walk) -> String { "Stub body" }
+    func emailBody(for walk: Walk, webURL: URL?) -> String {
+        webURL.map { "Stub body \($0.absoluteString)" } ?? "Stub body"
+    }
 }
 
 /// Stands in for Firestore so the upload rules can be exercised without a

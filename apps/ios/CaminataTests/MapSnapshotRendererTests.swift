@@ -48,7 +48,7 @@ final class MapSnapshotRendererTests: XCTestCase {
         let walk = TestRoute.walk()
         let export: WalkExport
         do {
-            export = try await WalkExporter().export(walk)
+            export = try await exporter.export(walk)
         } catch {
             throw XCTSkip("Map tiles unavailable: \(error)")
         }
@@ -73,10 +73,31 @@ final class MapSnapshotRendererTests: XCTestCase {
 
     func testTheEmailBodyCarriesTheHeadlineNumbers() {
         let walk = TestRoute.walk()
-        let body = WalkExporter().emailBody(for: walk)
+        let body = exporter.emailBody(for: walk, webURL: nil)
 
-        XCTAssertTrue(body.contains("Distance:"))
-        XCTAssertTrue(body.contains("Duration:"))
+        XCTAssertTrue(body.contains("Distancia:"))
+        XCTAssertTrue(body.contains("Duración:"))
         XCTAssertTrue(body.contains(WalkFormatting.distance(walk.stats.distance)))
+    }
+
+    /// The link is the only way back to the walk on a bigger screen, so it has
+    /// to survive into the mail rather than only living in the sheet.
+    func testTheEmailBodyLinksToTheWebWhenTheWalkIsUploaded() {
+        let walk = TestRoute.walk()
+        let url = WebHistory.url(for: walk.id)
+
+        XCTAssertTrue(exporter.emailBody(for: walk, webURL: url).contains(url.absoluteString))
+        XCTAssertFalse(exporter.emailBody(for: walk, webURL: nil).contains("caminata.cardozo.dev"))
+    }
+
+    private var exporter: WalkExporter {
+        WalkExporter(settings: AppSettings(defaults: freshDefaults()))
+    }
+
+    /// A suite-local defaults store, so a toggle flipped here cannot leak into
+    /// the simulator's real preferences or into another test.
+    private func freshDefaults() -> UserDefaults {
+        let suite = UserDefaults(suiteName: "MapSnapshotRendererTests-\(UUID().uuidString)")!
+        return suite
     }
 }

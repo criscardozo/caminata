@@ -33,17 +33,23 @@ final class HistoryViewModel {
         do {
             let walk = try store.loadWalk(metadata.id)
             guard !walk.points.isEmpty else {
-                errorMessage = "That walk has no recorded positions."
+                errorMessage = "Esa caminata no tiene posiciones registradas."
                 return
             }
-            export = try await exporter.export(walk)
+            var ready = try await exporter.export(walk)
+            // A walk that reached the cloud can be opened on the web; one that
+            // never did would link to a page with nothing to show.
+            if metadata.uploadedAt != nil {
+                ready.webURL = WebHistory.url(for: walk.id)
+            }
+            export = ready
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    func emailBody(for walk: Walk) -> String {
-        exporter.emailBody(for: walk)
+    func emailBody(for export: WalkExport) -> String {
+        exporter.emailBody(for: export.walk, webURL: export.webURL)
     }
 
     /// Deleting has to reach the cloud copy too, or a walk removed on the
@@ -60,7 +66,7 @@ final class HistoryViewModel {
                 }
                 removed.append(metadata.id)
             } catch {
-                errorMessage = "Could not delete that walk from the web. Try again with a connection."
+                errorMessage = "No se pudo borrar esa caminata de la web. Probá de nuevo con conexión."
             }
         }
 

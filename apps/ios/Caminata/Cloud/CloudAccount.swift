@@ -31,17 +31,17 @@ final class FirebaseAccount: CloudAccounting {
         var errorDescription: String? {
             switch self {
             case .notConfigured:
-                return "This build has no Firebase configuration, so there is nothing to sign in to."
+                return "Esta versión no tiene configuración de Firebase, así que no hay dónde iniciar sesión."
             case .noPresenter:
-                return "Could not find a window to present the Google sign-in sheet."
+                return "No se encontró una ventana para mostrar el inicio de sesión de Google."
             case .missingIdentityToken:
-                return "Google signed you in but returned no identity token."
+                return "Google inició la sesión pero no devolvió un token de identidad."
             case let .urlSchemeMismatch(expected):
                 return """
-                    This build cannot complete a Google sign-in: GoogleService-Info.plist \
-                    expects the URL scheme \(expected), which is not registered. Set \
-                    GOOGLE_REVERSED_CLIENT_ID in apps/ios/project.yml to that value and \
-                    re-run xcodegen generate.
+                    Esta versión no puede completar el inicio de sesión con Google: \
+                    GoogleService-Info.plist espera el esquema de URL \(expected), que no \
+                    está registrado. Poné ese valor en GOOGLE_REVERSED_CLIENT_ID dentro de \
+                    apps/ios/project.yml y volvé a correr xcodegen generate.
                     """
             }
         }

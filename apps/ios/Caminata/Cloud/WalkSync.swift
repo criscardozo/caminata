@@ -20,9 +20,9 @@ final class FirestoreWalkSync: WalkSyncing {
         var errorDescription: String? {
             switch self {
             case .signedOut:
-                return "Sign in to keep your walks on the web."
+                return "Iniciá sesión para tener tus caminatas en la web."
             case .nothingToUpload:
-                return "That walk recorded nothing worth uploading."
+                return "Esa caminata no registró nada para subir."
             }
         }
     }

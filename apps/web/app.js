@@ -252,7 +252,17 @@ onAuthStateChanged(auth, async (user) => {
 
     renderList(walks);
     show("history", true);
-    select(walks, walks[0].id);
+
+    // A ?walk=<id> link comes from the app's export screen. Fall back to the
+    // most recent walk when the id is not in this account's history -- an old
+    // link, or one from somebody else's phone.
+    const asked = new URLSearchParams(location.search).get("walk");
+    const wanted = asked && walks.some((w) => w.id === asked) ? asked : walks[0].id;
+    select(walks, wanted);
+    if (wanted !== walks[0].id) {
+      document.querySelector(`.walk-list li[data-id="${wanted}"]`)
+        ?.scrollIntoView({ block: "nearest" });
+    }
   } catch (error) {
     fail(error.message);
   }

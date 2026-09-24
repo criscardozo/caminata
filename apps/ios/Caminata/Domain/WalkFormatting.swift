@@ -35,7 +35,7 @@ enum WalkFormatting {
         formatter.calendar = calendar
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        return "Walk on \(formatter.string(from: startedAt))"
+        return "Caminata del \(formatter.string(from: startedAt))"
     }
 
     static func fileStamp(_ date: Date) -> String {

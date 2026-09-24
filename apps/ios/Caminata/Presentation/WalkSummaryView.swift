@@ -27,7 +27,7 @@ struct WalkSummaryView: View {
                             Button {
                                 showingMail = true
                             } label: {
-                                Label("Send by email", systemImage: "envelope.fill")
+                                Label("Enviar por mail", systemImage: "envelope.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 6)
                             }
@@ -35,17 +35,26 @@ struct WalkSummaryView: View {
                         }
 
                         ShareLink(items: export.attachments) {
-                            Label("Share", systemImage: "square.and.arrow.up")
+                            Label("Compartir", systemImage: "square.and.arrow.up")
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 6)
                         }
                         .buttonStyle(.bordered)
 
+                        if let webURL = export.webURL {
+                            Link(destination: webURL) {
+                                Label("Verla en la web", systemImage: "safari")
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
                         Button {
                             Task { await saveToPhotos() }
                         } label: {
                             Label(
-                                savedToPhotos ? "Saved to Photos" : "Save to Photos",
+                                savedToPhotos ? "Guardada en Fotos" : "Guardar en Fotos",
                                 systemImage: savedToPhotos ? "checkmark" : "photo"
                             )
                             .frame(maxWidth: .infinity)
@@ -61,11 +70,11 @@ struct WalkSummaryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Listo") { dismiss() }
                 }
             }
             .alert("Caminata", isPresented: saveErrorBinding) {
-                Button("OK", role: .cancel) {}
+                Button("Entendido", role: .cancel) {}
             } message: {
                 Text(saveErrorMessage ?? "")
             }
@@ -105,10 +114,10 @@ struct WalkSummaryView: View {
     private var statsGrid: some View {
         let stats = export.walk.stats
         return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-            summaryTile("Distance", WalkFormatting.distance(stats.distance))
-            summaryTile("Duration", WalkFormatting.duration(stats.elapsed))
-            summaryTile("Moving", WalkFormatting.duration(stats.movingTime))
-            summaryTile("Pace", WalkFormatting.pace(stats.averagePace))
+            summaryTile("Distancia", WalkFormatting.distance(stats.distance))
+            summaryTile("Duración", WalkFormatting.duration(stats.elapsed))
+            summaryTile("En movimiento", WalkFormatting.duration(stats.movingTime))
+            summaryTile("Ritmo", WalkFormatting.pace(stats.averagePace))
         }
     }
 

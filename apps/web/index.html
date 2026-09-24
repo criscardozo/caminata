@@ -1,14 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-AR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Caminata — history</title>
+    <title>Caminata</title>
+
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <meta name="theme-color" content="#0B3D4A" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -17,50 +25,108 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
+
   <body>
-    <header class="bar">
-      <h1>Caminata</h1>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 19c0-4 6-4 6-7s6-3 6-7" />
+          <circle cx="6" cy="19" r="2.6" class="mark-start" />
+          <circle cx="18" cy="5" r="2.6" class="mark-end" />
+        </svg>
+        <h1>Caminata</h1>
+      </div>
       <div id="account" class="account" hidden>
         <span id="account-name"></span>
-        <button id="sign-out" type="button" class="ghost">Sign out</button>
+        <button id="sign-out" type="button" class="ghost">Salir</button>
       </div>
     </header>
 
-    <main>
-      <section id="signed-out" class="panel centred" hidden>
-        <h2>Your walks, after the fact</h2>
-        <p>
-          Sign in with the same Google account you use on the phone, and every
-          walk you have finished shows up here.
+    <main id="main">
+      <section id="signed-out" class="state" hidden>
+        <p class="eyebrow">Tus caminatas</p>
+        <h2>Todo lo que caminaste, después</h2>
+        <p class="lede">
+          Entrá con la misma cuenta de Google que usás en el teléfono y cada
+          caminata que termines aparece acá.
         </p>
-        <button id="sign-in" type="button" class="primary">Sign in with Google</button>
+        <button id="sign-in" type="button" class="primary">
+          Entrar con Google
+        </button>
       </section>
 
-      <section id="loading" class="panel centred">
-        <p class="muted">Loading…</p>
+      <section id="loading" class="state">
+        <div class="pulse" aria-hidden="true"></div>
+        <p class="lede">Buscando tus caminatas…</p>
       </section>
 
-      <section id="empty" class="panel centred" hidden>
-        <h2>No walks yet</h2>
-        <p class="muted">
-          Finish a walk on the phone with this account signed in, and it will
-          appear here.
+      <section id="empty" class="state" hidden>
+        <p class="eyebrow">Sin registros</p>
+        <h2>Todavía no hay nada</h2>
+        <p class="lede">
+          Terminá una caminata en el teléfono con esta cuenta y va a aparecer
+          acá sola.
         </p>
       </section>
 
       <section id="history" class="history" hidden>
-        <ul id="walk-list" class="walk-list"></ul>
-        <div class="detail">
-          <div id="map"></div>
-          <div id="detail-stats" class="detail-stats"></div>
-        </div>
+        <aside class="index">
+          <div class="index-head">
+            <span class="eyebrow">Recorridos</span>
+            <span id="walk-count" class="count"></span>
+          </div>
+          <ul id="walk-list" class="walk-list"></ul>
+        </aside>
+
+        <section class="plate-wrap">
+          <article class="plate">
+            <header class="plate-head">
+              <div class="plate-title">
+                <input
+                  id="walk-name"
+                  class="name-field"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-label="Nombre de la caminata"
+                />
+                <p id="walk-date" class="plate-date"></p>
+              </div>
+              <div class="plate-actions">
+                <span id="save-hint" class="save-hint" role="status"></span>
+                <button id="download" type="button" class="ghost">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="icon">
+                    <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16" />
+                  </svg>
+                  Descargar imagen
+                </button>
+              </div>
+            </header>
+            <div class="map-frame">
+              <div id="map"></div>
+            </div>
+          </article>
+        </section>
       </section>
 
-      <section id="error" class="panel centred" hidden>
-        <h2>Something went wrong</h2>
-        <p id="error-message" class="muted"></p>
+      <section id="error" class="state" hidden>
+        <p class="eyebrow">Algo falló</p>
+        <h2>No se pudo cargar</h2>
+        <p id="error-message" class="lede"></p>
       </section>
     </main>
+
+    <dialog id="stats" class="stats">
+      <form method="dialog" class="stats-close-form">
+        <button class="stats-close" aria-label="Cerrar">&times;</button>
+      </form>
+      <p class="eyebrow">Resumen</p>
+      <h3 id="stats-title"></h3>
+      <dl id="stats-body" class="stats-grid"></dl>
+    </dialog>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

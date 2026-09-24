@@ -1,191 +1,512 @@
+/*
+  A walking logbook: warm paper, ink, and the map as the plate on the page.
+  The route colour is the only saturated thing on screen and it comes from the
+  walk itself, so the page changes character with whatever was chosen on the
+  phone.
+*/
+
 :root {
   color-scheme: light dark;
-  --bg: #f6f6f4;
-  --surface: #ffffff;
-  --ink: #16191d;
-  --muted: #6a7078;
-  --line: #e2e3e0;
-  --accent: #d92a3d;
-  --radius: 14px;
+
+  --paper: #f4f0e6;
+  --paper-2: #ebe5d6;
+  --plate: #fffdf8;
+  --ink: #1f2a24;
+  --ink-soft: #6f7a71;
+  --line: #ddd5c2;
+  --shadow: 31 42 36;
+
+  --route: #d9293d;
+
+  --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius: 6px;
+  --pad: clamp(16px, 2.2vw, 28px);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14161a;
-    --surface: #1c1f24;
-    --ink: #eceef0;
-    --muted: #9aa1aa;
-    --line: #2b2f36;
+    --paper: #12161a;
+    --paper-2: #171c21;
+    --plate: #1b2127;
+    --ink: #e9e4d8;
+    --ink-soft: #949e98;
+    --line: #2a3138;
+    --shadow: 0 0 0;
   }
 }
 
 * { box-sizing: border-box; }
 
-/* The panels below set display:flex, which outranks the user agent's rule for
-   [hidden] and leaves every one of them on screen at once. */
+:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 [hidden] { display: none !important; }
+
+html, body { height: 100%; }
 
 body {
   margin: 0;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background:
+    radial-gradient(120% 80% at 12% 0%, color-mix(in srgb, var(--route) 7%, transparent), transparent 60%),
+    var(--paper);
   color: var(--ink);
-  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
-.bar {
+/* A faint tooth on the paper, so flat fills read as a surface. */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .grain { mix-blend-mode: screen; opacity: 0.14; }
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 14px var(--pad);
   border-bottom: 1px solid var(--line);
-  background: var(--surface);
 }
 
-.bar h1 {
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.brand h1 {
   margin: 0;
-  font-size: 17px;
-  letter-spacing: -0.01em;
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
+
+/* A route in miniature, standing in for the icon. */
+.brand-mark {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  fill: none;
+  stroke: var(--route);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.brand-mark .mark-start { fill: #21a659; stroke: none; }
+.brand-mark .mark-end { fill: var(--ink); stroke: none; }
 
 .account {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 
-main { flex: 1; display: flex; }
+/* ---------- buttons ---------- */
 
-.panel { flex: 1; }
+button, .primary {
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
 
-.centred {
+.primary {
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  padding: 11px 22px;
+  letter-spacing: 0.01em;
+}
+
+.primary:hover { transform: translateY(-1px); }
+
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ghost:hover { background: var(--paper-2); border-color: var(--ink-soft); }
+
+.icon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- empty / loading / error states ---------- */
+
+main { flex: 1; display: flex; min-height: 0; }
+
+.state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 48px 24px;
+  gap: 14px;
+  padding: 56px 24px;
   text-align: center;
 }
 
-.centred h2 { margin: 0; font-size: 20px; }
-.centred p { margin: 0; max-width: 42ch; color: var(--muted); }
-.muted { color: var(--muted); }
-
-button {
-  font: inherit;
-  cursor: pointer;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  padding: 9px 16px;
-}
-
-.primary {
-  background: var(--accent);
-  color: #fff;
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.primary:hover { filter: brightness(1.07); }
-
-.ghost {
-  background: transparent;
-  border-color: var(--line);
-  color: var(--ink);
-  padding: 5px 12px;
+.state h2 {
+  margin: 0;
+  max-width: 18ch;
+  font-family: var(--serif);
+  font-size: clamp(28px, 4.5vw, 40px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.ghost:hover { background: var(--bg); }
+.lede { margin: 0; max-width: 46ch; color: var(--ink-soft); }
 
-/* --- history ---------------------------------------------------------- */
+.pulse {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--route);
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- history ---------- */
 
 .history {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(240px, 300px) 1fr;
+  grid-template-columns: minmax(230px, 310px) 1fr;
   min-height: 0;
 }
 
+.index {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+}
+
+.index-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px var(--pad) 10px;
+}
+
+.count { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
 .walk-list {
   margin: 0;
-  padding: 8px;
+  padding: 0 10px 20px;
   list-style: none;
   overflow-y: auto;
-  border-right: 1px solid var(--line);
-  background: var(--surface);
 }
 
 .walk-list li {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 11px 13px;
-  border-radius: 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px 11px 16px;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: background-color 130ms ease;
 }
 
-.walk-list li span { font-size: 13px; color: var(--muted); }
-.walk-list li:hover { background: var(--bg); }
+.walk-list li:hover { background: var(--paper-2); }
 
-.walk-list li.selected {
-  background: var(--accent);
-  color: #fff;
+/* The selected walk gets a rule in its own colour, like a tab in a ledger. */
+.walk-list li.selected::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--route);
 }
 
-.walk-list li.selected span { color: rgba(255, 255, 255, 0.82); }
+.walk-list li.selected { background: var(--paper-2); }
 
-.detail {
+.row-text { min-width: 0; flex: 1; }
+
+.row-name {
+  display: block;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-date {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-info {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 130ms ease, color 130ms ease, border-color 130ms ease;
+}
+
+.walk-list li:hover .row-info,
+.walk-list li.selected .row-info,
+.row-info:focus-visible { opacity: 1; }
+
+.row-info:hover { color: var(--ink); border-color: var(--line); }
+
+/* ---------- the plate ---------- */
+
+.plate-wrap {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--pad);
+}
+
+.plate {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  background: var(--plate);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow:
+    0 1px 2px rgb(var(--shadow) / 0.05),
+    0 12px 32px -14px rgb(var(--shadow) / 0.22);
+  overflow: hidden;
+  animation: rise 420ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
-#map {
-  flex: 1;
-  min-height: 320px;
-  background: var(--bg);
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
 }
 
-.detail-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border-top: 1px solid var(--line);
-}
-
-.tile {
+.plate-head {
+  flex: none;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 13px 8px;
-  background: var(--surface);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px 20px 14px;
 }
 
-.tile strong {
-  font-size: 17px;
+.plate-title { min-width: 0; }
+
+.name-field {
+  display: block;
+  width: 100%;
+  max-width: 24ch;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font-family: var(--serif);
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  transition: border-color 130ms ease, background-color 130ms ease;
+}
+
+.name-field:hover { border-color: var(--line); }
+
+.name-field:focus {
+  outline: none;
+  border-color: var(--route);
+  background: var(--paper);
+}
+
+.plate-date {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
 
-.tile span {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+.plate-actions { display: flex; align-items: center; gap: 12px; }
+
+.save-hint {
+  font-size: 12px;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 200ms ease;
 }
 
-@media (max-width: 720px) {
-  .history { grid-template-columns: 1fr; }
-  .walk-list {
-    max-height: 34vh;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-  }
+.save-hint.show { opacity: 1; }
+
+.map-frame {
+  flex: 1;
+  min-height: 300px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+#map { position: absolute; inset: 0; background: var(--paper-2); }
+
+/* The route draws itself in when a walk is opened. */
+.leaflet-overlay-pane path.route-line {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: draw 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .plate, .leaflet-overlay-pane path.route-line { animation: none; }
+  .leaflet-overlay-pane path.route-line { stroke-dashoffset: 0; }
+}
+
+/* ---------- stats dialog ---------- */
+
+.stats {
+  width: min(420px, calc(100vw - 32px));
+  padding: 26px 26px 30px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--plate);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -20px rgb(var(--shadow) / 0.4);
+}
+
+.stats::backdrop {
+  background: rgb(var(--shadow) / 0.34);
+  backdrop-filter: blur(2px);
+}
+
+.stats[open] { animation: pop 200ms cubic-bezier(0.2, 0.8, 0.3, 1); }
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+}
+
+.stats h3 {
+  margin: 6px 0 20px;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.stats-close-form { float: right; margin: -8px -8px 0 0; }
+
+.stats-close {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.stats-close:hover { color: var(--ink); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin: 0;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--plate);
+}
+
+.stat dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.stat dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- narrow ---------- */
+
+@media (max-width: 760px) {
+  .history { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .index { border-right: none; border-bottom: 1px solid var(--line); }
+  .walk-list { max-height: 30vh; }
+  .plate-wrap { padding: 12px; }
+  .row-info { opacity: 1; }
 }

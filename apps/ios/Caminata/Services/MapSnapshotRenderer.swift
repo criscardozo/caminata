@@ -8,6 +8,7 @@ struct MapSnapshotRenderer {
     }
 
     var size = CGSize(width: 1000, height: 1000)
+    var style = RouteOverlayStyle()
     /// Points closer than this to the line they sit on add nothing once the
     /// route is a few pixels wide.
     var simplifyTolerance: Double = 2
@@ -37,6 +38,11 @@ struct MapSnapshotRenderer {
             ))
         }
 
-        return RouteOverlayDrawer.image(base: snapshot.image, route: route, caption: caption)
+        return RouteOverlayDrawer.image(
+            base: snapshot.image,
+            route: route,
+            caption: caption,
+            style: style
+        )
     }
 }

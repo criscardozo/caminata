@@ -57,7 +57,7 @@ struct HistoryView: View {
 
     private func row(for walk: WalkMetadata) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(WalkFormatting.walkName(startedAt: walk.startedAt))
+            Text(WalkFormatting.displayName(for: walk))
                 .font(.headline)
             Text(subtitle(for: walk))
                 .font(.subheadline)

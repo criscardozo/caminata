@@ -22,6 +22,7 @@ final class TrackingViewModel {
     private let exporter: WalkExporting
     private let account: CloudAccounting
     private let uploader: WalkUploader
+    private let placeNamer: PlaceNaming
     let settings: AppSettings
     private var ticker: Task<Void, Never>?
     /// The ticker fires once a second whether or not a fix arrived, and the
@@ -34,8 +35,10 @@ final class TrackingViewModel {
         exporter: WalkExporting? = nil,
         account: CloudAccounting? = nil,
         uploader: WalkUploader? = nil,
-        settings: AppSettings = AppSettings()
+        settings: AppSettings = AppSettings(),
+        placeNamer: PlaceNaming = PlaceNamer()
     ) {
+        self.placeNamer = placeNamer
         let account = account ?? FirebaseAccount()
         self.store = store
         self.recorder = recorder ?? WalkRecorder(store: store)
@@ -130,6 +133,8 @@ final class TrackingViewModel {
                 return
             }
             Task {
+                // Naming first, so the summary and the upload carry it.
+                let walk = await describe(walk)
                 await exportWalk(walk)
                 // A stop happens wherever the walk ended, which is where there
                 // is least likely to be signal. A failure here is not worth
@@ -142,6 +147,29 @@ final class TrackingViewModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Stamps the colour the walk was drawn in and, when it has no name yet,
+    /// asks the geocoder what to call it. Both are best-effort: a walk with
+    /// neither still exports and uploads, it just keeps its date as a name.
+    private func describe(_ walk: Walk) async -> Walk {
+        var walk = walk
+        var name: String?
+
+        if walk.metadata.name == nil,
+           let first = walk.coordinates.first,
+           let last = walk.coordinates.last {
+            name = await placeNamer.name(startingAt: first, endingAt: last)
+        }
+
+        if let updated = try? store.describe(
+            walkID: walk.id,
+            name: name,
+            routeColor: settings.routeColorHex
+        ) {
+            walk.metadata = updated
+        }
+        return walk
     }
 
     func exportWalk(_ walk: Walk) async {

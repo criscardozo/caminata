@@ -32,7 +32,10 @@ struct WalkExporter: WalkExporting {
     var settings: AppSettings
 
     func export(_ walk: Walk) async throws -> WalkExport {
-        let name = WalkFormatting.walkName(startedAt: walk.startedAt)
+        let name = WalkFormatting.displayName(for: walk.metadata)
+        var renderer = renderer
+        renderer.style.routeColor = RouteColor.uiColor(from: settings.routeColorHex)
+
         let image = try await renderer.render(
             walk: walk,
             caption: settings.captionOnImage ? WalkFormatting.summaryCaption(for: walk) : nil
@@ -65,7 +68,7 @@ struct WalkExporter: WalkExporting {
     func emailBody(for walk: Walk, webURL: URL? = nil) -> String {
         let stats = walk.stats
         var body = """
-        \(WalkFormatting.walkName(startedAt: walk.startedAt))
+        \(WalkFormatting.displayName(for: walk.metadata))
 
         Distancia: \(WalkFormatting.distance(stats.distance))
         Duración: \(WalkFormatting.duration(stats.elapsed))

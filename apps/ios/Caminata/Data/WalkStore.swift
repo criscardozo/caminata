@@ -68,6 +68,17 @@ final class WalkStore {
         return metadata
     }
 
+    /// Records what a walk is called and what colour it was drawn in. A nil
+    /// argument leaves that field alone rather than clearing it.
+    @discardableResult
+    func describe(walkID: UUID, name: String? = nil, routeColor: String? = nil) throws -> WalkMetadata {
+        var metadata = try loadMetadata(walkID)
+        if let name { metadata.name = name }
+        if let routeColor { metadata.routeColor = routeColor }
+        try write(metadata)
+        return metadata
+    }
+
     func markUploaded(walkID: UUID, at date: Date) throws {
         var metadata = try loadMetadata(walkID)
         metadata.uploadedAt = date

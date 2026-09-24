@@ -73,7 +73,7 @@ struct TrackingView: View {
             if model.coordinates.count > 1 {
                 MapPolyline(coordinates: model.coordinates)
                     .stroke(
-                        .red,
+                        RouteColor.color(from: model.settings.routeColorHex),
                         style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round)
                     )
             }

@@ -1,7 +1,7 @@
 import UIKit
 
 struct RouteOverlayStyle {
-    var routeColor: UIColor = UIColor(red: 0.85, green: 0.16, blue: 0.24, alpha: 1)
+    var routeColor: UIColor = RouteColor.uiColor(from: RouteColor.default)
     /// A light outline under the line keeps it readable over parks, water and
     /// dense street grids alike.
     var haloColor: UIColor = UIColor.white.withAlphaComponent(0.95)

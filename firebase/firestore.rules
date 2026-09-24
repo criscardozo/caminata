@@ -14,8 +14,17 @@ service cloud.firestore {
         // could park arbitrary data here under its own uid.
         && request.resource.data.keys().hasOnly([
              'startedAt', 'endedAt', 'distance', 'movingTime',
-             'elevationGain', 'pointCount', 'route', 'uploadedAt'
+             'elevationGain', 'pointCount', 'route', 'uploadedAt',
+             'name', 'routeColor'
            ])
+        // Optional, and bounded: a name is typed by a person and a colour is
+        // written by the app, so neither has any business being long.
+        && (!('name' in request.resource.data)
+            || (request.resource.data.name is string
+                && request.resource.data.name.size() <= 80))
+        && (!('routeColor' in request.resource.data)
+            || (request.resource.data.routeColor is string
+                && request.resource.data.routeColor.matches('^#[0-9A-Fa-f]{6}$')))
         && request.resource.data.startedAt is timestamp
         && request.resource.data.endedAt is timestamp
         && request.resource.data.distance is number

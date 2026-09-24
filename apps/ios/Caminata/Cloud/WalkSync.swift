@@ -60,7 +60,7 @@ extension CloudWalk {
     /// The document the web reads. Dates go as Firestore timestamps so the
     /// browser gets them back as real dates rather than numbers to guess at.
     var firestoreData: [String: Any] {
-        [
+        var data: [String: Any] = [
             "startedAt": Timestamp(date: startedAt),
             "endedAt": Timestamp(date: endedAt),
             "distance": distance,
@@ -70,5 +70,14 @@ extension CloudWalk {
             "route": route,
             "uploadedAt": FieldValue.serverTimestamp()
         ]
+        // Left out rather than written as null when there is none, so a name
+        // typed on the web is not wiped by a later upload of the same walk.
+        if let name, !name.isEmpty {
+            data["name"] = name
+        }
+        if let routeColor, RouteColor.isValid(routeColor) {
+            data["routeColor"] = routeColor
+        }
+        return data
     }
 }

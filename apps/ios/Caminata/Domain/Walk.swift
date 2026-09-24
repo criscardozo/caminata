@@ -14,6 +14,15 @@ struct WalkMetadata: Equatable, Codable, Identifiable, Sendable {
     var movingTime: TimeInterval?
     var elevationGain: Double?
 
+    /// What to call this walk. Filled in from the places it went through when
+    /// it is stopped, and editable on the web. Nil for a walk recorded before
+    /// naming existed, or one the geocoder could not place.
+    var name: String?
+
+    /// The colour this walk was drawn in, so the web matches the image that
+    /// was exported at the time rather than whatever the setting says now.
+    var routeColor: String?
+
     /// When this walk reached Firestore. Nil for a walk recorded before the
     /// cloud existed, one stopped with no signal, or one recorded while
     /// signed out -- all of which are retried later.

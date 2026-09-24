@@ -30,6 +30,14 @@ enum WalkFormatting {
         String(format: "%.0f m", metres)
     }
 
+    /// The name to show: whatever the walk is called, falling back to when it
+    /// happened.
+    static func displayName(for metadata: WalkMetadata) -> String {
+        let trimmed = metadata.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmed, !trimmed.isEmpty { return trimmed }
+        return walkName(startedAt: metadata.startedAt)
+    }
+
     static func walkName(startedAt: Date, calendar: Calendar = .current) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar
@@ -48,7 +56,7 @@ enum WalkFormatting {
     static func summaryCaption(for walk: Walk) -> String {
         let stats = walk.stats
         return [
-            walkName(startedAt: walk.startedAt),
+            displayName(for: walk.metadata),
             distance(stats.distance),
             duration(stats.elapsed),
             pace(stats.averagePace)

@@ -20,6 +20,19 @@ struct SettingsView: View {
                     Text("Escribe la fecha, la distancia, el tiempo y el ritmo sobre la imagen del mapa. Queda grabada en la foto, así que viene desactivada.")
                 }
 
+                Section {
+                    ColorPicker(
+                        "Color del recorrido",
+                        selection: routeColor,
+                        supportsOpacity: false
+                    )
+                    presetRow
+                } header: {
+                    Text("Recorrido")
+                } footer: {
+                    Text("Se usa en el mapa en vivo, en la imagen que se exporta y en la web. Cada caminata guarda el color con el que se dibujó.")
+                }
+
                 if model.cloudAvailable {
                     accountSection
                     if model.pendingUploads > 0 {
@@ -35,6 +48,40 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private var routeColor: Binding<Color> {
+        Binding(
+            get: { RouteColor.color(from: model.settings.routeColorHex) },
+            set: { model.settings.routeColorHex = RouteColor.hex(from: $0) }
+        )
+    }
+
+    /// The picker is fine but slow for a choice most people make once, so the
+    /// colours that read well over map tiles are one tap away.
+    private var presetRow: some View {
+        HStack(spacing: 14) {
+            ForEach(RouteColor.presets, id: \.self) { hex in
+                Button {
+                    model.settings.routeColorHex = hex
+                } label: {
+                    Circle()
+                        .fill(RouteColor.color(from: hex))
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            Circle()
+                                .strokeBorder(
+                                    .primary,
+                                    lineWidth: model.settings.routeColorHex.caseInsensitiveCompare(hex) == .orderedSame ? 3 : 0
+                                )
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Color \(hex)")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder

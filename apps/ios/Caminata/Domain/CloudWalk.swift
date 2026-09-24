@@ -12,6 +12,8 @@ struct CloudWalk: Equatable, Sendable {
     static let routeTolerance: Double = 5
 
     var id: UUID
+    var name: String?
+    var routeColor: String?
     var startedAt: Date
     var endedAt: Date
     var distance: Double
@@ -30,6 +32,8 @@ struct CloudWalk: Equatable, Sendable {
         let simplified = RouteSimplifier.simplify(walk.coordinates, tolerance: Self.routeTolerance)
 
         self.id = walk.id
+        self.name = walk.metadata.name
+        self.routeColor = walk.metadata.routeColor
         self.startedAt = walk.startedAt
         self.endedAt = endedAt
         self.distance = stats.distance

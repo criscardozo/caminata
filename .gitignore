@@ -37,3 +37,4 @@ artifacts/
 firebase-debug.log
 firebase-debug.*.log
 .firebase/
+.vercel

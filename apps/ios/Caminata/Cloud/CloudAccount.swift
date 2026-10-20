@@ -27,6 +27,7 @@ final class FirebaseAccount: CloudAccounting {
         case noPresenter
         case missingIdentityToken
         case urlSchemeMismatch(expected: String)
+        case notInHousehold(String)
 
         var errorDescription: String? {
             switch self {
@@ -36,6 +37,8 @@ final class FirebaseAccount: CloudAccounting {
                 return "No se encontró una ventana para mostrar el inicio de sesión de Google."
             case .missingIdentityToken:
                 return "Google inició la sesión pero no devolvió un token de identidad."
+            case let .notInHousehold(email):
+                return "La cuenta \(email) no tiene acceso a Caminata."
             case let .urlSchemeMismatch(expected):
                 return """
                     Esta versión no puede completar el inicio de sesión con Google: \
@@ -95,7 +98,15 @@ final class FirebaseAccount: CloudAccounting {
             withIDToken: idToken,
             accessToken: result.user.accessToken.tokenString
         )
-        try await Auth.auth().signIn(with: credential)
+        let signedIn = try await Auth.auth().signIn(with: credential)
+
+        // The rules would refuse a stranger anyway; signing them straight back
+        // out says why, instead of leaving uploads failing with no explanation.
+        guard Household.allows(signedIn.user.email) else {
+            let email = signedIn.user.email ?? "sin email"
+            try? signOut()
+            throw AccountError.notInHousehold(email)
+        }
         onChange?()
     }
 

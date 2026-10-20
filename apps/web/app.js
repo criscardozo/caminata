@@ -24,6 +24,11 @@ const el = (id) => document.getElementById(id);
 const show = (id, visible) => el(id).toggleAttribute("hidden", !visible);
 
 const DEFAULT_ROUTE_COLOR = "#D9293D";
+
+/// The two accounts this is for. Firestore's rules are what keep everyone else
+/// out; this copy is so a stranger is told so instead of seeing an empty page.
+/// Keep it in step with firebase/firestore.rules and Household.swift.
+const HOUSEHOLD = ["cardozocristian@gmail.com", "pereznatalialourdes@gmail.com"];
 /// Capped because every document read counts against the free Firestore quota.
 const HISTORY_LIMIT = 200;
 
@@ -43,8 +48,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let walks = [];
+/// Set when a stranger signs in, so the refusal survives the sign-out it
+/// triggers -- which fires this listener again with no user.
+let refused = null;
 let selectedId = null;
-let uid = null;
 
 // --- formatting, kept in step with WalkFormatting.swift -------------------
 
@@ -156,10 +163,11 @@ function toWalk(snapshot) {
   };
 }
 
-async function loadWalks(userId) {
+/// One shared collection: both of us see every walk, whoever recorded it.
+async function loadWalks() {
   const snapshot = await getDocs(
     query(
-      collection(db, "users", userId, "walks"),
+      collection(db, "walks"),
       orderBy("startedAt", "desc"),
       limit(HISTORY_LIMIT),
     ),
@@ -188,7 +196,7 @@ async function saveName(walkId, raw) {
   if (next === walk.name) return;
 
   try {
-    await updateDoc(doc(db, "users", uid, "walks", walkId), { name: next });
+    await updateDoc(doc(db, "walks", walkId), { name: next });
     walk.name = next;
     const row = document.querySelector(`.walk-list li[data-id="${walkId}"] .row-name`);
     if (row) row.textContent = displayName(walk);
@@ -335,10 +343,20 @@ el("sign-out").addEventListener("click", () => signOut(auth));
 onAuthStateChanged(auth, async (user) => {
   show("error", false);
   el("account").toggleAttribute("hidden", !user);
-  uid = user?.uid ?? null;
+
+  if (user && !HOUSEHOLD.includes((user.email ?? "").toLowerCase())) {
+    refused = user.email ?? "sin email";
+    await signOut(auth);
+    return;
+  }
 
   if (!user) {
     for (const id of ["loading", "history", "empty"]) show(id, false);
+    // The refusal goes on the sign-in panel itself, next to the button that
+    // lets the right account try.
+    el("refused").textContent = refused ? `La cuenta ${refused} no tiene acceso.` : "";
+    el("refused").hidden = !refused;
+    refused = null;
     show("signed-out", true);
     return;
   }
@@ -348,7 +366,7 @@ onAuthStateChanged(auth, async (user) => {
   show("loading", true);
 
   try {
-    walks = await loadWalks(user.uid);
+    walks = await loadWalks();
     show("loading", false);
 
     if (walks.length === 0) {

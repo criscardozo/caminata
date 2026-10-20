@@ -202,6 +202,16 @@ main { flex: 1; display: flex; min-height: 0; }
 
 .lede { margin: 0; max-width: 46ch; color: var(--ink-soft); }
 
+.refused {
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, #c0392b 40%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, #c0392b 8%, transparent);
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .pulse {
   width: 34px;
   height: 34px;

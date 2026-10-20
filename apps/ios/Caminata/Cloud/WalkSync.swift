@@ -36,23 +36,23 @@ final class FirestoreWalkSync: WalkSyncing {
     var canUpload: Bool { account.isAvailable && account.userID != nil }
 
     func upload(_ walk: Walk) async throws {
-        guard let userID = account.userID else { throw SyncError.signedOut }
+        guard account.userID != nil else { throw SyncError.signedOut }
         guard let cloud = CloudWalk(walk: walk) else { throw SyncError.nothingToUpload }
 
-        try await document(userID: userID, walkID: cloud.id).setData(cloud.firestoreData)
+        // Merged rather than overwritten, so a name typed on the web survives a
+        // later upload of the same walk from the phone.
+        try await document(cloud.id).setData(cloud.firestoreData, merge: true)
     }
 
     func delete(walkID: UUID) async throws {
-        guard let userID = account.userID else { throw SyncError.signedOut }
-        try await document(userID: userID, walkID: walkID).delete()
+        guard account.userID != nil else { throw SyncError.signedOut }
+        try await document(walkID).delete()
     }
 
-    private func document(userID: String, walkID: UUID) -> DocumentReference {
-        Firestore.firestore()
-            .collection("users")
-            .document(userID)
-            .collection("walks")
-            .document(walkID.uuidString)
+    /// One collection for the household. Who recorded a walk is deliberately
+    /// not part of where it lives: both of us see all of them.
+    private func document(_ walkID: UUID) -> DocumentReference {
+        Firestore.firestore().collection("walks").document(walkID.uuidString)
     }
 }
 

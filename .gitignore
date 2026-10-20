@@ -36,5 +36,8 @@ artifacts/
 .gstack/
 firebase-debug.log
 firebase-debug.*.log
+# The emulators write their own logs wherever they are started from.
+firestore-debug.log
+ui-debug.log
 .firebase/
 .vercel

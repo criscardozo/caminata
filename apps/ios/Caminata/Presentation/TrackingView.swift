@@ -7,6 +7,7 @@ struct TrackingView: View {
     @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var showingHistory = false
     @State private var showingSettings = false
+    @Namespace private var mapScope
 
     var body: some View {
         NavigationStack {
@@ -18,11 +19,15 @@ struct TrackingView: View {
                     if model.permissionNeeded {
                         permissionBanner
                     }
+                    mapButtons
                     statsPanel
                     recordButton
                 }
                 .padding()
             }
+            // The controls live outside the Map, so they need its scope to know
+            // which map they drive.
+            .mapScope(mapScope)
             .navigationTitle("Caminata")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -67,7 +72,7 @@ struct TrackingView: View {
     }
 
     private var map: some View {
-        Map(position: $camera) {
+        Map(position: $camera, scope: mapScope) {
             UserAnnotation()
 
             if model.coordinates.count > 1 {
@@ -87,9 +92,22 @@ struct TrackingView: View {
                 }
             }
         }
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
+        // No built-in controls: the map runs up under the navigation bar, so
+        // MapKit's top-trailing corner is the screen's, and its buttons landed
+        // under the status bar and on top of the history button.
+        .mapControls {}
+    }
+
+    /// Bottom-trailing, just above the figures: clear of the toolbar, and where
+    /// a thumb already is.
+    private var mapButtons: some View {
+        HStack {
+            Spacer()
+            VStack(spacing: 10) {
+                MapCompass(scope: mapScope)
+                MapUserLocationButton(scope: mapScope)
+            }
+            .buttonBorderShape(.circle)
         }
     }
 

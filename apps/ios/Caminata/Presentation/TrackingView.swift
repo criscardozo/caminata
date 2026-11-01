@@ -75,12 +75,14 @@ struct TrackingView: View {
         Map(position: $camera, scope: mapScope) {
             UserAnnotation()
 
-            if model.coordinates.count > 1 {
-                MapPolyline(coordinates: model.coordinates)
-                    .stroke(
-                        RouteColor.color(from: model.settings.routeColorHex),
-                        style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round)
-                    )
+            ForEach(Array(model.segments.enumerated()), id: \.offset) { _, segment in
+                if segment.count > 1 {
+                    MapPolyline(coordinates: segment)
+                        .stroke(
+                            RouteColor.color(from: model.settings.routeColorHex),
+                            style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round)
+                        )
+                }
             }
 
             if let start = model.coordinates.first {
@@ -115,7 +117,7 @@ struct TrackingView: View {
         HStack {
             stat("Distancia", WalkFormatting.distance(model.stats.distance))
             divider
-            stat("Tiempo", WalkFormatting.duration(model.stats.elapsed))
+            stat(model.isPaused ? "En pausa" : "Tiempo", WalkFormatting.duration(model.elapsed))
             divider
             stat("Ritmo", WalkFormatting.pace(model.stats.averagePace))
         }
@@ -144,21 +146,50 @@ struct TrackingView: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Idle: one button to start. Recording: pause or resume beside stop, so
+    /// the button that ends the walk is never the one that just changed.
+    @ViewBuilder
     private var recordButton: some View {
-        Button {
-            model.toggleRecording()
-        } label: {
-            Label(
-                model.isRecording ? "Detener" : "Empezar",
-                systemImage: model.isRecording ? "stop.fill" : "play.fill"
-            )
-            .font(.title3.weight(.semibold))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+        if model.isRecording {
+            HStack(spacing: 12) {
+                Button {
+                    model.togglePause()
+                } label: {
+                    Label(
+                        model.isPaused ? "Reanudar" : "Pausar",
+                        systemImage: model.isPaused ? "play.fill" : "pause.fill"
+                    )
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(model.isPaused ? .green : .orange)
+
+                Button {
+                    model.stop()
+                } label: {
+                    Label("Detener", systemImage: "stop.fill")
+                        .font(.title3.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+            }
+        } else {
+            Button {
+                model.start()
+            } label: {
+                Label("Empezar", systemImage: "play.fill")
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.green)
+            .disabled(model.permissionNeeded)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(model.isRecording ? .red : .green)
-        .disabled(model.permissionNeeded)
     }
 
     private var permissionBanner: some View {

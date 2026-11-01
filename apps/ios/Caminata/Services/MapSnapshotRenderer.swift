@@ -14,8 +14,12 @@ struct MapSnapshotRenderer {
     var simplifyTolerance: Double = 2
 
     func render(walk: Walk, caption: String?) async throws -> UIImage {
-        let coordinates = RouteSimplifier.simplify(walk.coordinates, tolerance: simplifyTolerance)
-        guard let region = MapRegionFitter.region(for: coordinates) else {
+        // Simplified a stretch at a time, so a pause is never smoothed over
+        // into a line the walker did not take.
+        let stretches = walk.segments.map {
+            RouteSimplifier.simplify($0.map(\.coordinate), tolerance: simplifyTolerance)
+        }
+        guard let region = MapRegionFitter.region(for: stretches.flatMap { $0 }) else {
             throw RenderError.noCoordinates
         }
 
@@ -31,16 +35,18 @@ struct MapSnapshotRenderer {
         options.traitCollection = UITraitCollection(userInterfaceStyle: .light)
 
         let snapshot = try await MKMapSnapshotter(options: options).start()
-        let route = coordinates.map { coordinate in
-            snapshot.point(for: CLLocationCoordinate2D(
-                latitude: coordinate.latitude,
-                longitude: coordinate.longitude
-            ))
+        let routes = stretches.map { stretch in
+            stretch.map { coordinate in
+                snapshot.point(for: CLLocationCoordinate2D(
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude
+                ))
+            }
         }
 
         return RouteOverlayDrawer.image(
             base: snapshot.image,
-            route: route,
+            routes: routes,
             caption: caption,
             style: style
         )

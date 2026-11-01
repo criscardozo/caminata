@@ -28,7 +28,15 @@ struct WalkMetadata: Equatable, Codable, Identifiable, Sendable {
     /// signed out -- all of which are retried later.
     var uploadedAt: Date?
 
+    /// Every pause, in order. Optional so a walk written before pausing
+    /// existed still decodes; read it through `pauseList`.
+    var pauses: [WalkPause]?
+
+    var pauseList: [WalkPause] { pauses ?? [] }
+
     var isActive: Bool { endedAt == nil }
+
+    var isPaused: Bool { isActive && pauseList.last.map { $0.end == nil } == true }
 
     var duration: TimeInterval? {
         guard let endedAt else { return nil }
@@ -52,7 +60,26 @@ struct Walk: Equatable, Identifiable, Sendable {
 
     var coordinates: [Coordinate] { points.map(\.coordinate) }
 
+    /// The walk cut at its pauses. Whatever happened between pausing and
+    /// resuming -- a coffee, a bus -- is not part of the route, so it is not
+    /// drawn as a line or counted as distance.
+    var segments: [[TrackPoint]] {
+        Walk.segments(of: points, pauses: metadata.pauseList)
+    }
+
+    static func segments(of points: [TrackPoint], pauses: [WalkPause]) -> [[TrackPoint]] {
+        var result: [[TrackPoint]] = []
+        for point in points {
+            if let previous = result.last?.last, !pauses.separates(previous.timestamp, point.timestamp) {
+                result[result.count - 1].append(point)
+            } else {
+                result.append([point])
+            }
+        }
+        return result
+    }
+
     var stats: WalkStats {
-        WalkStats.compute(from: points, endedAt: metadata.endedAt)
+        WalkStats.compute(from: points, endedAt: metadata.endedAt, pauses: metadata.pauseList)
     }
 }

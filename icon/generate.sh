@@ -55,6 +55,35 @@ cat > "apps/ios/Caminata/Resources/Assets.xcassets/Contents.json" <<'JSON'
 }
 JSON
 
+# The watch app gets the same icon; watchOS masks it to a circle itself.
+WATCH="apps/ios/CaminataWatch/Assets.xcassets/AppIcon.appiconset"
+mkdir -p "$WATCH"
+cp "$IOS/AppIcon-1024.png" "$WATCH/AppIcon-1024.png"
+cat > "$WATCH/Contents.json" <<'JSON'
+{
+  "images" : [
+    {
+      "filename" : "AppIcon-1024.png",
+      "idiom" : "universal",
+      "platform" : "watchos",
+      "size" : "1024x1024"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+JSON
+cat > "apps/ios/CaminataWatch/Assets.xcassets/Contents.json" <<'JSON'
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+JSON
+
 cp "$SRC" "$WEB/favicon.svg"
 
 # A 16px favicon is where the SVG stops being legible, so a raster fallback

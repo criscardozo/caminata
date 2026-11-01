@@ -8,6 +8,9 @@ enum PointRejection: Equatable, Sendable {
     case outOfOrder
     case tooClose(Double)
     case implausibleSpeed(Double)
+    /// The walk is paused; fixes keep arriving so the app stays alive, but
+    /// none of them belong to the route.
+    case paused
 }
 
 enum FilterDecision: Equatable, Sendable {

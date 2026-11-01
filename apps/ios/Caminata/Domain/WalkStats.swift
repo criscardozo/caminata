@@ -34,7 +34,19 @@ extension WalkStats {
     /// Altitude noise below this is ignored when accumulating climb.
     static let elevationThreshold: Double = 3
 
-    static func compute(from points: [TrackPoint], endedAt: Date? = nil) -> WalkStats {
+    /// The time a walk has been going, from `start` to `end`, minus pauses.
+    /// This is the clock the live screens show, so it starts at Play rather
+    /// than at the first fix.
+    static func activeDuration(from start: Date, to end: Date, pauses: [WalkPause]) -> TimeInterval {
+        guard end > start else { return 0 }
+        return max(0, end.timeIntervalSince(start) - pauses.pausedTime(within: start...end))
+    }
+
+    static func compute(
+        from points: [TrackPoint],
+        endedAt: Date? = nil,
+        pauses: [WalkPause] = []
+    ) -> WalkStats {
         guard let first = points.first else { return .zero }
 
         var distance: Double = 0
@@ -43,6 +55,13 @@ extension WalkStats {
         var elevationReference = first.altitude
 
         for (previous, current) in zip(points, points.dropFirst()) {
+            // Across a pause there is no walk: the gap is neither distance nor
+            // moving time, and the climb starts again from where it resumed.
+            if pauses.separates(previous.timestamp, current.timestamp) {
+                elevationReference = current.altitude
+                continue
+            }
+
             let segment = GeoMath.distance(from: previous.coordinate, to: current.coordinate)
             distance += segment
 
@@ -63,7 +82,7 @@ extension WalkStats {
         let last = endedAt ?? points[points.count - 1].timestamp
         return WalkStats(
             distance: distance,
-            elapsed: max(0, last.timeIntervalSince(first.timestamp)),
+            elapsed: activeDuration(from: first.timestamp, to: last, pauses: pauses),
             movingTime: movingTime,
             elevationGain: elevationGain
         )

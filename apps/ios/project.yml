@@ -4,6 +4,7 @@ options:
   bundleIdPrefix: dev.cardozo
   deploymentTarget:
     iOS: "17.0"
+    watchOS: "10.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -13,6 +14,10 @@ settings:
     # last seven days and three apps fit on a phone at once. Set here, not on the
     # command line, so a fresh `xcodegen generate` can sign without being told.
     DEVELOPMENT_TEAM: FA737M2U79
+    # One version for the app, its widget extension and its watch app: an
+    # embedded target whose version differs from its host is flagged on build.
+    MARKETING_VERSION: "0.4.0"
+    CURRENT_PROJECT_VERSION: "5"
     SWIFT_VERSION: "5.10"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
@@ -31,7 +36,10 @@ targets:
     platform: iOS
     sources:
       - path: Caminata
+      - path: Shared
     dependencies:
+      - target: CaminataWidgets
+      - target: CaminataWatch
       - package: Firebase
         product: FirebaseAuth
       - package: Firebase
@@ -42,8 +50,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.caminata
         PRODUCT_NAME: Caminata
-        MARKETING_VERSION: "0.3.1"
-        CURRENT_PROJECT_VERSION: "4"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
@@ -69,12 +75,59 @@ targets:
           - CFBundleURLSchemes:
               - $(GOOGLE_REVERSED_CLIENT_ID)
         ITSAppUsesNonExemptEncryption: false
+        # The walk in progress on the lock screen and in the Dynamic Island.
+        NSSupportsLiveActivities: true
         NSLocationWhenInUseUsageDescription: >-
-          Caminata records the route you walk while a walk is in progress,
-          including when the screen is locked.
+          Caminata registra el recorrido mientras hay una caminata en curso,
+          también con la pantalla bloqueada.
         NSPhotoLibraryAddUsageDescription: >-
-          Caminata saves the map image of your walk to your photo library when
-          you choose to.
+          Caminata guarda la imagen del mapa de tu caminata en Fotos cuando lo
+          pedís.
+
+  CaminataWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: CaminataWidgets
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.caminata.widgets
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+    info:
+      path: CaminataWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Caminata
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  CaminataWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: CaminataWatch
+      - path: Shared/Core
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.caminata.watchkitapp
+        PRODUCT_NAME: Caminata
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SKIP_INSTALL: YES
+    info:
+      path: CaminataWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Caminata
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: dev.cardozo.caminata
+        # It shows the walk the phone is recording; on its own it has nothing.
+        WKRunsIndependentlyOfCompanionApp: false
 
   CaminataTests:
     type: bundle.unit-test

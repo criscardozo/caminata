@@ -61,6 +61,11 @@ final class WalkStore {
     func finish(walkID: UUID, endedAt: Date, stats: WalkStats? = nil) throws -> WalkMetadata {
         var metadata = try loadMetadata(walkID)
         metadata.endedAt = endedAt
+        // Stopping a paused walk ends the pause at the same moment.
+        if var pauses = metadata.pauses, pauses.last?.end == nil {
+            pauses[pauses.count - 1].end = endedAt
+            metadata.pauses = pauses
+        }
         if let stats {
             metadata.apply(stats)
         }
@@ -75,6 +80,27 @@ final class WalkStore {
         var metadata = try loadMetadata(walkID)
         if let name { metadata.name = name }
         if let routeColor { metadata.routeColor = routeColor }
+        try write(metadata)
+        return metadata
+    }
+
+    /// Written straight to disk, like every fix, so a walk killed while paused
+    /// comes back paused rather than having walked through the pause.
+    @discardableResult
+    func pause(walkID: UUID, at date: Date) throws -> WalkMetadata {
+        var metadata = try loadMetadata(walkID)
+        guard !metadata.isPaused else { return metadata }
+        metadata.pauses = metadata.pauseList + [WalkPause(start: date, end: nil)]
+        try write(metadata)
+        return metadata
+    }
+
+    @discardableResult
+    func resume(walkID: UUID, at date: Date) throws -> WalkMetadata {
+        var metadata = try loadMetadata(walkID)
+        guard metadata.isPaused, var pauses = metadata.pauses else { return metadata }
+        pauses[pauses.count - 1].end = max(date, pauses[pauses.count - 1].start)
+        metadata.pauses = pauses
         try write(metadata)
         return metadata
     }

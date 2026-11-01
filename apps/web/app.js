@@ -106,8 +106,10 @@ function drawRoute(walk) {
   document.documentElement.style.setProperty("--route", colour);
 
   const layer = L.layerGroup();
-  L.polyline(walk.coordinates, { color: "#ffffff", weight: 9, opacity: 0.95 }).addTo(layer);
-  const line = L.polyline(walk.coordinates, {
+  // A multi-polyline: one line per stretch, sharing one path so the draw-in
+  // animation still runs as a single stroke.
+  L.polyline(walk.segments, { color: "#ffffff", weight: 9, opacity: 0.95 }).addTo(layer);
+  const line = L.polyline(walk.segments, {
     color: colour,
     weight: 4.5,
     className: "route-line",
@@ -149,6 +151,14 @@ function toWalk(snapshot) {
   const coordinates = [];
   for (let i = 0; i + 1 < flat.length; i += 2) coordinates.push([flat[i], flat[i + 1]]);
 
+  // A walk paused along the way is drawn as separate stretches, so the map
+  // shows no line across wherever it was paused.
+  const breaks = (data.breaks ?? [])
+    .filter((n) => Number.isInteger(n) && n > 0 && n < coordinates.length)
+    .sort((a, b) => a - b);
+  const edges = [0, ...breaks, coordinates.length];
+  const segments = edges.slice(1).map((end, i) => coordinates.slice(edges[i], end));
+
   return {
     id: snapshot.id,
     name: data.name ?? null,
@@ -160,6 +170,7 @@ function toWalk(snapshot) {
     elevationGain: data.elevationGain ?? 0,
     pointCount: data.pointCount ?? 0,
     coordinates,
+    segments,
   };
 }
 
@@ -309,7 +320,7 @@ el("download").addEventListener("click", async (event) => {
   label.textContent = " Generando…";
 
   try {
-    const blob = await renderWalkImage(walk.coordinates, {
+    const blob = await renderWalkImage(walk.segments, {
       color: walk.routeColor || DEFAULT_ROUTE_COLOR,
       caption: displayName(walk),
     });

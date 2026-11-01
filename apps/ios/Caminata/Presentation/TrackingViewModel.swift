@@ -6,8 +6,15 @@ import Observation
 @Observable
 final class TrackingViewModel {
     private(set) var isRecording = false
+    private(set) var isPaused = false
     private(set) var coordinates: [CLLocationCoordinate2D] = []
+    /// The route cut at its pauses, so the live map does not draw a line
+    /// across wherever the walk was paused.
+    private(set) var segments: [[CLLocationCoordinate2D]] = []
     private(set) var stats: WalkStats = .zero
+    /// The walk's clock: from Play, minus pauses. This is what the live
+    /// screens show; `stats.elapsed` runs from the first fix.
+    private(set) var elapsed: TimeInterval = 0
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
     private(set) var isExporting = false
 
@@ -23,11 +30,13 @@ final class TrackingViewModel {
     private let account: CloudAccounting
     private let uploader: WalkUploader
     private let placeNamer: PlaceNaming
+    private let broadcaster: WalkBroadcasting
     let settings: AppSettings
     private var ticker: Task<Void, Never>?
     /// The ticker fires once a second whether or not a fix arrived, and the
     /// coordinates only change when one did.
     private var renderedPointCount = 0
+    private var renderedPauseCount = 0
 
     init(
         store: WalkStore = WalkStore(root: WalkStore.applicationSupportRoot()),
@@ -36,9 +45,11 @@ final class TrackingViewModel {
         account: CloudAccounting? = nil,
         uploader: WalkUploader? = nil,
         settings: AppSettings = AppSettings(),
-        placeNamer: PlaceNaming = PlaceNamer()
+        placeNamer: PlaceNaming = PlaceNamer(),
+        broadcaster: WalkBroadcasting? = nil
     ) {
         self.placeNamer = placeNamer
+        self.broadcaster = broadcaster ?? LiveBroadcaster()
         let account = account ?? FirebaseAccount()
         self.store = store
         self.recorder = recorder ?? WalkRecorder(store: store)
@@ -54,6 +65,13 @@ final class TrackingViewModel {
             self?.authorizationStatus = status
         }
         authorizationStatus = self.recorder.authorizationStatus
+
+        self.broadcaster.onCommand = { [weak self] command in
+            switch command {
+            case .pause: self?.pause()
+            case .resume: self?.resume()
+            }
+        }
 
         self.account.onChange = { [weak self] in self?.refreshAccount() }
         self.uploader.onChange = { [weak self] in
@@ -118,6 +136,26 @@ final class TrackingViewModel {
         do {
             try recorder.start()
             startTicking()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func togglePause() {
+        isPaused ? resume() : pause()
+    }
+
+    func pause() {
+        do {
+            try recorder.pause()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func resume() {
+        do {
+            try recorder.resume()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -193,18 +231,41 @@ final class TrackingViewModel {
     // MARK: - Private
 
     private func refresh() {
+        let now = Date()
         isRecording = recorder.isRecording
+        isPaused = recorder.isPaused
         let points = recorder.points
-        if points.count != renderedPointCount {
+        let pauses = recorder.metadata?.pauseList ?? []
+
+        if points.count != renderedPointCount || pauses.count != renderedPauseCount {
             renderedPointCount = points.count
-            coordinates = points.map {
-                CLLocationCoordinate2D(
-                    latitude: $0.coordinate.latitude,
-                    longitude: $0.coordinate.longitude
-                )
+            renderedPauseCount = pauses.count
+            let location = { (point: TrackPoint) in
+                CLLocationCoordinate2D(latitude: point.coordinate.latitude, longitude: point.coordinate.longitude)
             }
+            coordinates = points.map(location)
+            segments = Walk.segments(of: points, pauses: pauses).map { $0.map(location) }
         }
-        stats = WalkStats.compute(from: points, endedAt: isRecording ? Date() : nil)
+
+        stats = WalkStats.compute(from: points, endedAt: isRecording ? now : nil, pauses: pauses)
+        if let metadata = recorder.metadata, isRecording {
+            elapsed = WalkStats.activeDuration(from: metadata.startedAt, to: now, pauses: pauses)
+            broadcaster.publish(
+                LiveWalkState(
+                    elapsed: elapsed,
+                    at: now,
+                    pausedAt: metadata.isPaused ? pauses.last?.start : nil,
+                    distance: stats.distance,
+                    pace: stats.averagePace,
+                    routeColor: settings.routeColorHex
+                ),
+                startedAt: metadata.startedAt
+            )
+        } else {
+            elapsed = 0
+            broadcaster.publish(nil, startedAt: nil)
+        }
+
         if isRecording, ticker == nil {
             startTicking()
         }

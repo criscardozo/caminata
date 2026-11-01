@@ -17,6 +17,9 @@ final class SpyTracker: LocationTracking {
     func requestAuthorization() { authorizationRequests += 1 }
     func start() { startCount += 1 }
     func stop() { stopCount += 1 }
+
+    private(set) var idleChanges: [Bool] = []
+    func setIdle(_ idle: Bool) { idleChanges.append(idle) }
 }
 
 enum TestRoute {
@@ -233,5 +236,19 @@ final class StubAccount: CloudAccounting {
         userID = nil
         displayName = nil
         onChange?()
+    }
+}
+
+/// Records what would have gone to the lock screen and the watch, so the tests
+/// can check it without starting a Live Activity or a watch session.
+@MainActor
+final class SpyBroadcaster: WalkBroadcasting {
+    private(set) var published: [LiveWalkState?] = []
+    var onCommand: ((WatchMessage.Command) -> Void)?
+
+    var last: LiveWalkState? { published.last ?? nil }
+
+    func publish(_ state: LiveWalkState?, startedAt: Date?) {
+        published.append(state)
     }
 }

@@ -52,11 +52,13 @@ function boundsOf(coordinates) {
 }
 
 /**
- * @param {[number, number][]} coordinates lat/lon pairs
+ * @param {[number, number][][]} segments the walk's stretches, each a list of
+ *   lat/lon pairs; a pause between two stretches is left as a gap
  * @param {{ color?: string, caption?: string }} options
  * @returns {Promise<Blob>}
  */
-export async function renderWalkImage(coordinates, { color = "#D9293D", caption = "" } = {}) {
+export async function renderWalkImage(segments, { color = "#D9293D", caption = "" } = {}) {
+  const coordinates = segments.flat();
   if (coordinates.length === 0) throw new Error("La caminata no tiene recorrido para dibujar.");
 
   const bounds = boundsOf(coordinates);
@@ -106,17 +108,21 @@ export async function renderWalkImage(coordinates, { color = "#D9293D", caption 
   }
   await Promise.all(jobs);
 
-  const points = coordinates.map(([lat, lon]) => [
+  const project = ([lat, lon]) => [
     (lonToX(lon, zoom) - originX) * TILE,
     (latToY(lat, zoom) - originY) * TILE,
-  ]);
+  ];
+  const stretches = segments.filter((s) => s.length > 0).map((s) => s.map(project));
+  const points = stretches.flat();
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   const stroke = (colour, lineWidth) => {
     ctx.beginPath();
-    points.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    for (const stretch of stretches) {
+      stretch.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    }
     ctx.strokeStyle = colour;
     ctx.lineWidth = lineWidth;
     ctx.stroke();

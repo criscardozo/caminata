@@ -13,6 +13,10 @@ protocol LocationTracking: AnyObject {
     func requestAuthorization()
     func start()
     func stop()
+    /// Drops to the cheapest accuracy while a walk is paused, without stopping
+    /// updates: stopping them would let iOS suspend the app, and then neither
+    /// the watch nor the Live Activity could resume it.
+    func setIdle(_ idle: Bool)
 }
 
 /// Thin wrapper over CLLocationManager.
@@ -57,6 +61,12 @@ final class LocationTracker: NSObject, LocationTracking {
     func stop() {
         manager.stopUpdatingLocation()
         manager.allowsBackgroundLocationUpdates = false
+        setIdle(false)
+    }
+
+    func setIdle(_ idle: Bool) {
+        manager.desiredAccuracy = idle ? kCLLocationAccuracyThreeKilometers : kCLLocationAccuracyBestForNavigation
+        manager.distanceFilter = idle ? CLLocationDistanceMax : 5
     }
 }
 

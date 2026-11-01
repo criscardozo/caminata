@@ -9,6 +9,7 @@ final class TrackingViewModelTests: XCTestCase {
     private var tracker: SpyTracker!
     private var recorder: WalkRecorder!
     private var exporter: StubExporter!
+    private var broadcaster: SpyBroadcaster!
     private var model: TrackingViewModel!
 
     override func setUp() async throws {
@@ -18,7 +19,13 @@ final class TrackingViewModelTests: XCTestCase {
         tracker = SpyTracker()
         recorder = WalkRecorder(store: store, tracker: tracker)
         exporter = StubExporter()
-        model = TrackingViewModel(store: store, recorder: recorder, exporter: exporter)
+        broadcaster = SpyBroadcaster()
+        model = TrackingViewModel(
+            store: store,
+            recorder: recorder,
+            exporter: exporter,
+            broadcaster: broadcaster
+        )
     }
 
     override func tearDown() async throws {
@@ -122,7 +129,8 @@ final class TrackingViewModelTests: XCTestCase {
         let revivedModel = TrackingViewModel(
             store: store,
             recorder: revivedRecorder,
-            exporter: StubExporter()
+            exporter: StubExporter(),
+            broadcaster: SpyBroadcaster()
         )
         revivedModel.onAppear()
 

@@ -29,6 +29,18 @@ enum RouteOverlayDrawer {
         caption: String? = nil,
         style: RouteOverlayStyle = RouteOverlayStyle()
     ) -> UIImage {
+        image(base: base, routes: [route], caption: caption, style: style)
+    }
+
+    /// One line per stretch of the walk: a pause leaves a gap rather than a
+    /// straight line to wherever it resumed. The start and end markers go on
+    /// the first and last points of the whole walk.
+    static func image(
+        base: UIImage,
+        routes: [[CGPoint]],
+        caption: String? = nil,
+        style: RouteOverlayStyle = RouteOverlayStyle()
+    ) -> UIImage {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = base.scale
         format.opaque = true
@@ -36,8 +48,10 @@ enum RouteOverlayDrawer {
         let renderer = UIGraphicsImageRenderer(size: base.size, format: format)
         return renderer.image { context in
             base.draw(in: CGRect(origin: .zero, size: base.size))
-            draw(route: route, in: context.cgContext, width: base.size.width, style: style)
-            drawMarkers(route: route, in: context.cgContext, width: base.size.width, style: style)
+            for route in routes {
+                draw(route: route, in: context.cgContext, width: base.size.width, style: style)
+            }
+            drawMarkers(route: routes.flatMap { $0 }, in: context.cgContext, width: base.size.width, style: style)
             if let caption {
                 drawCaption(caption, in: base.size, style: style)
             }

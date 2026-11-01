@@ -78,6 +78,9 @@ extension CloudWalk {
         if let routeColor, RouteColor.isValid(routeColor) {
             data["routeColor"] = routeColor
         }
+        // Always written, even empty: the upload merges, so a walk uploaded
+        // again after a change must replace any breaks it had before.
+        data["breaks"] = breaks
         return data
     }
 }

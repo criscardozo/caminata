@@ -1,30 +1,11 @@
 import Foundation
 
 enum WalkFormatting {
-    static func distance(_ metres: Double) -> String {
-        if metres < 1000 {
-            return String(format: "%.0f m", metres)
-        }
-        return String(format: "%.2f km", metres / 1000)
-    }
+    static func distance(_ metres: Double) -> String { LiveFormat.distance(metres) }
 
-    static func duration(_ interval: TimeInterval) -> String {
-        let total = Int(interval.rounded())
-        let hours = total / 3600
-        let minutes = (total % 3600) / 60
-        let seconds = total % 60
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        }
-        return String(format: "%d:%02d", minutes, seconds)
-    }
+    static func duration(_ interval: TimeInterval) -> String { LiveFormat.duration(interval) }
 
-    /// Pace reads as min/km, the unit people actually walk by.
-    static func pace(_ secondsPerKilometre: TimeInterval?) -> String {
-        guard let secondsPerKilometre else { return "--" }
-        let total = Int(secondsPerKilometre.rounded())
-        return String(format: "%d:%02d /km", total / 60, total % 60)
-    }
+    static func pace(_ secondsPerKilometre: TimeInterval?) -> String { LiveFormat.pace(secondsPerKilometre) }
 
     static func elevation(_ metres: Double) -> String {
         String(format: "%.0f m", metres)

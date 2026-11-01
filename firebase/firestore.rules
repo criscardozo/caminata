@@ -28,7 +28,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
              'startedAt', 'endedAt', 'distance', 'movingTime',
              'elevationGain', 'pointCount', 'route', 'uploadedAt',
-             'name', 'routeColor'
+             'name', 'routeColor', 'breaks'
            ])
         && request.resource.data.startedAt is timestamp
         && request.resource.data.endedAt is timestamp
@@ -47,6 +47,10 @@ service cloud.firestore {
             || request.resource.data.name == null
             || (request.resource.data.name is string
                 && request.resource.data.name.size() <= 80))
+        // Where the route restarts after a pause, as point indices.
+        && (!('breaks' in request.resource.data)
+            || (request.resource.data.breaks is list
+                && request.resource.data.breaks.size() <= 1000))
         && (!('routeColor' in request.resource.data)
             || (request.resource.data.routeColor is string
                 && request.resource.data.routeColor.matches('^#[0-9A-Fa-f]{6}$')));

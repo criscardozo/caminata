@@ -24,12 +24,24 @@ struct CloudWalk: Equatable, Sendable {
     /// array inside an array, and a list of maps spends several times the
     /// bytes on repeating the keys "lat" and "lng".
     var route: [Double]
+    /// Where each stretch after the first begins, counted in points (pairs in
+    /// `route`). Empty for a walk that was never paused. Kept beside the flat
+    /// route rather than nesting arrays, which Firestore does not allow.
+    var breaks: [Int]
 
     init?(walk: Walk) {
         guard let endedAt = walk.endedAt ?? walk.points.last?.timestamp else { return nil }
 
         let stats = walk.stats
-        let simplified = RouteSimplifier.simplify(walk.coordinates, tolerance: Self.routeTolerance)
+        let stretches = walk.segments.map {
+            RouteSimplifier.simplify($0.map(\.coordinate), tolerance: Self.routeTolerance)
+        }
+        var breaks: [Int] = []
+        var count = 0
+        for stretch in stretches {
+            if count > 0 { breaks.append(count) }
+            count += stretch.count
+        }
 
         self.id = walk.id
         self.name = walk.metadata.name
@@ -40,7 +52,14 @@ struct CloudWalk: Equatable, Sendable {
         self.movingTime = stats.movingTime
         self.elevationGain = stats.elevationGain
         self.pointCount = walk.points.count
-        self.route = simplified.flatMap { [$0.latitude, $0.longitude] }
+        self.route = stretches.flatMap { $0.flatMap { [$0.latitude, $0.longitude] } }
+        self.breaks = breaks
+    }
+
+    var segments: [[Coordinate]] {
+        let all = coordinates
+        let edges = [0] + breaks + [all.count]
+        return zip(edges, edges.dropFirst()).map { Array(all[$0..<$1]) }
     }
 
     var coordinates: [Coordinate] {
